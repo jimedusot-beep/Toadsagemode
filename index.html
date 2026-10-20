@@ -14,12 +14,12 @@
 </div>
 <script>
 (()=>{const byId=x=>document.getElementById(x);let packet=null;
-const flags=[[/\\b(os\\.system|subprocess\\.|eval\\s*\\(|exec\\s*\\()/i,"Executes commands or dynamic code"],[/\\b(rm\\s+-rf|shutil\\.rmtree|os\\.remove|unlink\\s*\\()/i,"Possible deletion"],[/\\b(requests\\.|urllib\\.|fetch\\s*\\(|https?:\\/\\/)/i,"Network access or URL"],[/\\b(password|secret|api[_-]?key|private[_-]?key|token)\\b/i,"Potential sensitive material"],[/\\b(sudo|chmod|chown|docker\\s+run)/i,"Elevated permissions or container commands"]];
+const flags=[[/\b(os\.system|subprocess\.|eval\s*\(|exec\s*\()/i,"Executes commands or dynamic code"],[/\b(rm\s+-rf|shutil\.rmtree|os\.remove|unlink\s*\()/i,"Possible deletion"],[/\b(requests\.|urllib\.|fetch\s*\(|https?:\/\/)/i,"Network access or URL"],[/\b(password|secret|api[_-]?key|private[_-]?key|token)\b/i,"Potential sensitive material"],[/\b(sudo|chmod|chown|docker\s+run)/i,"Elevated permissions or container commands"]];
 function analyze(){const raw=byId("feedinput").value.trim();if(!raw){byId("feedreport").textContent="Paste content first.";packet=null;return;}
-const lang=/^```(?:python|py)/im.test(raw)||/\\b(import\\s+\\w+|def\\s+\\w+\\s*\\(|print\\s*\\()/m.test(raw)?"Python":/^[\\[{]/.test(raw)? "JSON or structured data":/^```/m.test(raw)?"Code block":"Instructions or mixed text";
+const lang=/^```(?:python|py)/im.test(raw)||/\b(import\s+\w+|def\s+\w+\s*\(|print\s*\()/m.test(raw)?"Python":/^[\[{]/.test(raw)? "JSON or structured data":/^```/m.test(raw)?"Code block":"Instructions or mixed text";
 const risks=flags.filter(([re])=>re.test(raw)).map(([,label])=>label);
 packet={schema:"toad-feed-v1",created_at:new Date().toISOString(),kind:lang,source:"user paste",content:raw,review:{status:"unverified",warnings:risks,code_executed:false,installed:false}};
-byId("feedreport").textContent="Detected: "+lang+"\\nStatus: Prepared only (not executed or installed)\\nWarnings: "+(risks.join("; ")||"No simple pattern matches; NOT a safety guarantee")+"\\nCharacters: "+raw.length+"\\nNext step: review and test on a separate local engine before installing.";
+byId("feedreport").textContent="Detected: "+lang+"\nStatus: Prepared only (not executed or installed)\nWarnings: "+(risks.join("; ")||"No simple pattern matches; NOT a safety guarantee")+"\nCharacters: "+raw.length+"\nNext step: review and test on a separate local engine before installing.";
 }
 byId("inspectfeed").addEventListener("click",analyze);
 byId("savefeed").addEventListener("click",()=>{analyze();if(!packet)return;const blob=new Blob([JSON.stringify(packet,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="toad-feed.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
