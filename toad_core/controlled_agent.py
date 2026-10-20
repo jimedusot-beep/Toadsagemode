@@ -15,7 +15,7 @@ import os
 import secrets
 import time
 from pathlib import Path
-from .engine import Engine
+from .engine import Engine\nfrom .git_drafts import GitDraft
 from .models import OllamaAdapter, ModelError
 from .repair import validate_repair
 from .schema import PackageError
@@ -89,15 +89,20 @@ class ControlledAgent:
             original = candidate["manifest"]
             if not any(f["path"] == path for f in original["files"]):
                 raise PackageError("Can only edit an existing candidate source file")
-            proposed = json.loads(json.dumps(original))
-            for file in proposed["files"]:
-                if file["path"] == path:
-                    file["content"] = content
+            draft = GitDraft(self.engine.store.workspace, original)
+            try:
+                revision = draft.edit(path, content)
+                if revision["unchanged"]:
+                    return {"unchanged": True, "candidate_id": identifier}
+                proposed = json.loads(json.dumps(original))
+                proposed["files"] = draft.snapshot()
+            finally:
+                draft.close()
             validated, changed = validate_repair(original, proposed)
             if not changed:
                 return {"unchanged": True, "candidate_id": identifier}
             record = self.engine.ingest_package(validated, source="bounded-agent-edit")
-            return {"candidate_id": record["id"], "changed_paths": changed, "installed": False, "executed": False}
+            return {"candidate_id": record["id"], "changed_paths": changed, "diff": revision["diff"][:3000],\n                    "git_revision": revision["revision"], "installed": False, "executed": False}
         if tool == "test_candidate":
             result = self.engine.test(identifier, self.worker)
             return {"passed": result.get("passed", False), "executed": result.get("executed", False),
