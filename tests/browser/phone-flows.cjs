@@ -245,7 +245,73 @@ async function manualRecovery(browser,base){
   }finally{await context.close();}
 }
 
+async function reviewFixes(browser,base){
+  const context=await browser.newContext({...devices['iPhone 13'],acceptDownloads:true});
+  try{
+    const page=await context.newPage();await page.goto(base);
+    await page.fill('#feedinput','original candidate');await feed(page);
+    await page.locator('[data-ability-id] summary').first().click();
+    await page.locator('[data-metadata-field="name"]').fill('Unsaved replacement');
+    await page.fill('#searchabilities','original');
+    assert.equal(await page.inputValue('[data-metadata-field="name"]'),'Unsaved replacement');
+    await page.fill('#searchabilities','hidden');await page.fill('#searchabilities','');
+    assert.equal(await page.inputValue('[data-metadata-field="name"]'),'Unsaved replacement');
+    await page.fill('#feedinput','another candidate');await feed(page);
+    const original=page.locator('[data-ability-id]').filter({has:page.locator('input[value="original-candidate"]')});
+    assert.equal(await original.locator('[data-metadata-field="name"]').inputValue(),'Unsaved replacement');
+    await original.getByRole('button',{name:'Save changes',exact:true}).click();
+    await page.reload();assert.equal(await page.locator('[data-metadata-field="name"]').evaluateAll(nodes=>nodes.some(e=>e.value==='unsaved-replacement')),true);
+    // Download and restore a real large backup into an empty browser inbox.
+    await page.evaluate(key=>{
+      const C=window.ToadCatalog;
+      const abilities=[0,1,2].map(i=>C.createCandidate('Note '+i+'\n'+'x'.repeat(249000)));
+      localStorage.setItem(key,JSON.stringify({schema:'toad-library-v2',schema_version:2,abilities,extensions:{}}));
+    },KEY);await page.reload();
+    const waiting=page.waitForEvent('download');await page.getByRole('button',{name:'Export backup',exact:true}).click();
+    const buffer=fs.readFileSync(await (await waiting).path());assert.ok(buffer.length<2000000);
+    await page.evaluate(key=>localStorage.removeItem(key),KEY);await page.reload();
+    await page.setInputFiles('#importabilities',{name:'backup.json',mimeType:'application/json',buffer});
+    await page.waitForFunction(()=>document.querySelector('#importabilities').value==='');
+    assert.match(await page.locator('#abilitymessage').innerText(),/Imported 3/);
+    // Structured package source can exceed the paste limit while meeting package limits.
+    const manifest={schema:'toad-ability-v2',name:'large-package',version:'0.1.0',description:'test',entrypoint:'main.py',dependencies:[],permissions:[],tests:[],files:[{path:'main.py',content:'#'+'x'.repeat(130000)},{path:'other.py',content:'#'+'y'.repeat(130000)}]};
+    await page.evaluate(key=>localStorage.removeItem(key),KEY);await page.reload();
+    await page.setInputFiles('#importabilities',{name:'large.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({schema:'toad-library-v2',abilities:[{name:manifest.name,manifest,content:JSON.stringify(manifest)}]}))});
+    await page.waitForFunction(()=>document.querySelector('#importabilities').value==='');
+    await page.locator('[data-ability-id] summary').first().click();
+    await page.locator('[data-metadata-field="name"]').fill('renamed-package');
+    await page.getByRole('button',{name:'Save changes',exact:true}).click();
+    assert.match(await page.locator('#abilitymessage').innerText(),/Changes saved/);
+    await page.reload();assert.equal(await page.inputValue('[data-metadata-field="name"]'),'renamed-package');
+    if(await page.evaluate(()=>Boolean(navigator.locks))){
+      await page.locator('[data-ability-id] summary').first().click();
+      await page.evaluate(()=>{navigator.locks.request('toad-inbox-write-v2',()=>new Promise(resolve=>{window.releaseMetadataLock=resolve;}));});
+      await page.waitForFunction(()=>typeof window.releaseMetadataLock==='function');
+      await page.locator('[data-metadata-field="name"]').fill('first-edit');
+      await page.getByRole('button',{name:'Save changes',exact:true}).click();
+      await page.locator('[data-metadata-field="name"]').fill('newer-edit');
+      await page.evaluate(()=>window.releaseMetadataLock());
+      await page.waitForFunction(()=>document.querySelector('#abilitymessage').textContent.includes('Newer edits'));
+      assert.equal(await page.inputValue('[data-metadata-field="name"]'),'newer-edit');
+      assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).abilities[0].name,KEY),'first-edit');
+      await page.getByRole('button',{name:'Discard changes',exact:true}).click();
+      assert.equal(await page.inputValue('[data-metadata-field="name"]'),'first-edit');
+      await page.locator('[data-ability-id] summary').first().click();
+      await page.evaluate(()=>{navigator.locks.request('toad-inbox-write-v2',()=>new Promise(resolve=>{window.releaseRevertLock=resolve;}));});
+      await page.waitForFunction(()=>typeof window.releaseRevertLock==='function');
+      await page.locator('[data-metadata-field="name"]').fill('second-edit');
+      await page.getByRole('button',{name:'Save changes',exact:true}).click();
+      await page.locator('[data-metadata-field="name"]').fill('first-edit');
+      await page.evaluate(()=>window.releaseRevertLock());
+      await page.waitForFunction(()=>document.querySelector('[data-metadata-field="name"]').defaultValue==='second-edit');
+      assert.equal(await page.inputValue('[data-metadata-field="name"]'),'first-edit','a newer revert to the old value remains unsaved');
+
+    }
+
+  }finally{await context.close();}
+}
+
 module.exports=async(browser,base)=>{
-  const cases={reload:reloadDraft,stale:staleTab,fallback:(b,u)=>staleTab(b,u,true),attachments,denied:deniedDraft,unreadable:unreadableDraft,metadata:pendingMetadata,import:delayedImport,newer:newerDraft,queued:queuedWriter,recover:importDraft,escaped:escapedDraft,manual:manualRecovery};
+  const cases={review:reviewFixes,reload:reloadDraft,stale:staleTab,fallback:(b,u)=>staleTab(b,u,true),attachments,denied:deniedDraft,unreadable:unreadableDraft,metadata:pendingMetadata,import:delayedImport,newer:newerDraft,queued:queuedWriter,recover:importDraft,escaped:escapedDraft,manual:manualRecovery};
   for(const [name,run] of Object.entries(cases))if(!process.env.TOAD_PHONE_CASE || process.env.TOAD_PHONE_CASE===name){await run(browser,base);console.log('PASS: phone '+name);}
 };

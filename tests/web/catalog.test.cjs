@@ -108,3 +108,46 @@ test('unreadable, future and oversized drafts are refused for explicit recovery'
     assert.throws(()=>Catalog.normalizeDraft({...draft,...changed}),/draft|limit|field/i);
   }
 });
+
+test('a large browser backup restores without duplicating retained source payloads', () => {
+  const abilities=[0,1,2].map(i=>Catalog.createCandidate('Note '+i+'\n'+'x'.repeat(249000)));
+  const backup={schema:'toad-library-v2',schema_version:2,abilities,extensions:{}};
+  assert.ok(Catalog.bytes(JSON.stringify(backup))<Catalog.LIMITS.backup);
+  const restored=Catalog.mergeLibraries({schema:'toad-library-v2',abilities:[],extensions:{}},backup).library;
+  assert.deepEqual(restored.abilities.map(a=>a.content),abilities.map(a=>a.content));
+  assert.ok(Catalog.bytes(JSON.stringify(restored))<Catalog.LIMITS.backup);
+  const again=Catalog.mergeLibraries({schema:'toad-library-v2',abilities:[],extensions:{}},restored).library;
+  assert.equal(again.abilities.length,3);
+  assert.ok(Catalog.bytes(JSON.stringify(again))<Catalog.LIMITS.backup);
+});
+
+test('backup restore preserves unknown item and library metadata without accepting trust claims', () => {
+  const a=Catalog.createCandidate('Remember this source');a.custom={owner:'Jimmy'};
+  a.extensions={original:{legacy:'retain'},user:{notes:'keep'}};
+  a.status='installed';a.verification='verified';a.installed=true;a.test_results=[{passed:true}];
+  const backup={schema:'toad-library-v2',abilities:[a],extensions:{project:'sensors'},custom_library:{license:'original'}};
+  const restored=Catalog.mergeLibraries({schema:'toad-library-v2',abilities:[],extensions:{}},backup).library;
+  const record=restored.abilities[0];
+  assert.equal(record.extensions.original.custom.owner,'Jimmy');
+  assert.equal(record.extensions.original.extensions.original.legacy,'retain');
+  assert.equal(record.extensions.original.extensions.user.notes,'keep');
+  assert.equal(record.extensions.original.test_results[0].passed,true);
+  assert.equal(record.installed,false);assert.equal(record.verification,'unverified');
+  assert.equal(restored.extensions.imported_backup_metadata.custom_library.license,'original');
+  assert.equal(restored.extensions.imported_backup_metadata.extensions.project,'sensors');
+});
+
+test('large structured packages support metadata edits without reparsing the original source', () => {
+  assert.equal(typeof Catalog.editMetadata,'function');
+  const p={schema:'toad-ability-v2',name:'large-demo',version:'0.1.0',files:[{path:'a.py',content:'#'+'a'.repeat(130000)},{path:'b.py',content:'#'+'b'.repeat(130000)}],entrypoint:'a.py',permissions:[],dependencies:[],tests:[]};
+  const a=Catalog.createCandidate('placeholder');a.content=JSON.stringify(p);a.manifest=Catalog.normalizeManifest(p);
+  const original=Catalog.normalizeLibrary({schema:'toad-library-v2',abilities:[a]}).abilities[0];
+  const edited=Catalog.editMetadata(original,'Renamed package','');
+  assert.equal(edited.name,'renamed-package');assert.equal(edited.manifest.name,'renamed-package');
+  assert.equal(edited.description,'');assert.equal(edited.manifest.description,'');
+  assert.equal(edited.content,original.content);
+  assert.deepEqual(edited.manifest.files,original.manifest.files);
+  assert.equal(edited.verification,'unverified');assert.equal(edited.installed,false);
+  assert.equal(original.name,'large-demo','editing must not mutate the source record');
+  assert.throws(()=>Catalog.editMetadata(original,'1234','description'),/name|letter/i);
+});

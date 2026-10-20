@@ -68,6 +68,24 @@ class AgentAndSkillsTests(unittest.TestCase):
             finally:
                 engine.close()
 
+    def test_agent_edit_preserves_file_metadata(self):
+        with tempfile.TemporaryDirectory() as folder:
+            engine = Engine(Path(folder))
+            try:
+                package = {"schema": "toad-ability-v2", "name": "metadata-demo", "version": "0.1.0",
+                           "entrypoint": "main.py", "dependencies": [], "permissions": [], "tests": [],
+                           "files": [{"path": "main.py", "content": "value = 1\n", "extensions": {"owner": "user"}},
+                                     {"path": "test_main.py", "content": "# regression\n", "extensions": {"purpose": "regression"}}]}
+                initial = engine.ingest_package(package)
+                agent = ControlledAgent(engine, "metadata", candidate_id=initial["id"])
+                output = agent.execute_actions({"action": "propose_edit", "candidate_id": initial["id"],
+                                                "path": "main.py", "content": "value = 2\n"})
+                files = engine.get(output["candidate_id"])["manifest"]["files"]
+                self.assertEqual(files[0]["extensions"], {"owner": "user"})
+                self.assertEqual(files[1], engine.get(initial["id"])["manifest"]["files"][1])
+            finally:
+                engine.close()
+
     @unittest.skipUnless(shutil.which("git"), "git executable not installed")
     def test_git_draft_edit_diff_rollback(self):
         with tempfile.TemporaryDirectory() as folder:
