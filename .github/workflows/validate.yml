@@ -6,6 +6,7 @@ on:
       - 'tools/**'
       - 'empathy/**'
       - 'tests/**'
+      - 'web/**'
       - '.github/workflows/validate.yml'
   pull_request:
     paths:
@@ -13,6 +14,7 @@ on:
       - 'tools/**'
       - 'empathy/**'
       - 'tests/**'
+      - 'web/**'
       - '.github/workflows/validate.yml'
 permissions:
   contents: read
@@ -25,6 +27,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check browser JavaScript syntax
+        run: node --check web/ability-library.js
       - name: Compile Python
         run: python -m compileall -q toad_core tools tests
       - name: Unit tests
