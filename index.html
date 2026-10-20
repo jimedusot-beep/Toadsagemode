@@ -25,4 +25,4 @@ byId("inspectfeed").addEventListener("click",analyze);
 byId("savefeed").addEventListener("click",()=>{analyze();if(!packet)return;const blob=new Blob([JSON.stringify(packet,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="toad-feed.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
 byId("clearfeed").addEventListener("click",()=>{byId("feedinput").value="";packet=null;byId("feedreport").textContent="Nothing analyzed yet."});
 })();
-</script></body></html>
+</script><script src="web/ability-library.js" defer></script></body></html>
