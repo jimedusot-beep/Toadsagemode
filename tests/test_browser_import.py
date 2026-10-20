@@ -44,3 +44,15 @@ class BrowserLibraryImportTests(unittest.TestCase):
             with self.assertRaises(ValueError): import_browser_library(source,base/"out.json")
 
 if __name__=="__main__": unittest.main()
+
+class LegacyMetadataTests(unittest.TestCase):
+    def test_legacy_converter_preserves_source_version_and_unknown_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);source=root/'old.json';target=root/'new.json'
+            source.write_text(json.dumps({'schema':'toad-library-v1','custom_top':9,'abilities':[{'name':'legacy-demo','version':'2.0.0','source':'Gemini','content':'print(1)','custom':7,'status':'unverified','installed':False}]}))
+            import_browser_library(source,target)
+            out=json.loads(target.read_text())
+            self.assertEqual(out['custom_top'],9)
+            self.assertEqual(out['abilities'][0]['version'],'2.0.0')
+            self.assertEqual(out['abilities'][0]['source'],'Gemini')
+            self.assertEqual(out['abilities'][0]['custom'],7)

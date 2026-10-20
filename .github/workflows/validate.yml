@@ -1,40 +1,50 @@
 name: Validate Toad Sage foundations
 on:
   push:
-    paths:
-      - 'toad_core/**'
-      - 'tools/**'
-      - 'empathy/**'
-      - 'tests/**'
-      - 'web/**'
-      - '.github/workflows/validate.yml'
+    branches-ignore: [main]
   pull_request:
-    paths:
-      - 'toad_core/**'
-      - 'tools/**'
-      - 'empathy/**'
-      - 'tests/**'
-      - 'web/**'
-      - '.github/workflows/validate.yml'
+  workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+  python:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python: ['3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check browser JavaScript syntax
-        run: node --check web/ability-library.js
-      - name: Check HTML inline JavaScript syntax
+      - name: Check trusted browser source syntax
         run: python tools/check_inline_js.py
-      - name: Compile Python
-        run: python -m compileall -q toad_core tools tests
-      - name: Unit tests
+      - name: Test browser data contracts
+        run: node --test tests/web/*.test.cjs
+      - name: Compile trusted Python source
+        run: python -m compileall -q toad_core tools tests lab
+      - name: Test trusted project source (no submitted code execution)
         run: python -m unittest discover -s tests -v
+      - name: Build allowlisted static assets
+        run: python tools/build_site.py
+  browser:
+    name: Mobile WebKit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Install WebKit test browser
+        run: npx playwright install --with-deps webkit
+      - name: Exercise iPhone-sized inbox, storage failure and backup paths
+        run: npm run test:browser

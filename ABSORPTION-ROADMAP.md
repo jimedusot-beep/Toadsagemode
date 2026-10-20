@@ -1,33 +1,9 @@
-# Toad Sage Absorption Protocol
+# Toad Sage Absorption Protocol — implemented foundation and next stages
 
-## Goal
-Copy or upload code from ChatGPT/Gemini. The future local agent should inspect, test, and install it as an independent, reversible capability with minimal user babysitting.
+The current source implements safe text/source/manifest/ZIP intake, static digestion and analysis, portable v1/v2 migration, a durable local catalog/queue/CLI, a fail-closed Docker worker, versioned sandbox-only activation/rollback, an optional local Ollama adapter and bounded checkpointed Python missions with frozen-test repair rules.
 
-## Current state
-The GitHub Pages Feed Inbox is browser-only. It creates an unverified `toad-feed.json`. It does not execute or install content. The Python validator in this repo only performs structural checks; it is **not** a malware detector or sandbox.
+Read [README.md](README.md), [LAB.md](docs/LAB.md), [MISSIONS.md](docs/MISSIONS.md) and the [baseline audit](docs/audit/2026-10-20-baseline.md). The current engine requires no separate Python agent download and no model for library management.
 
-## Planned milestones
-1. Intake and review: accept a manifest with a list of files, validate format and paths, flag suspicious text. Never execute during intake.
-2. Ability Library: catalog module name, version, source, required permissions, compatibility, tests, installation status, and previous known-good release.
-3. Offline sandbox: run controlled automated tests with CPU/memory/time limits, read-only container filesystem, no network, and no access to personal files or secrets.
-4. Install: stage modules outside the protected core; activate only after required tests pass; maintain versioned backups and rollback.
-5. Repair and reuse: AI may propose modifications, but only tested modules become available to other projects.
+Live Docker containment and real Ollama inference were unavailable in this development host. These are explicit verification gates, not silently completed features. The original iPhone failure's exact historical cause remains unverified even when desktop WebKit regression scenarios pass.
 
-## Constraints
-No payment information, no paid APIs by default, no access to private files, no unattended host shell privileges, and no self-modifying core. Minimize approval prompts by preauthorizing only bounded workspace operations. GitHub must remain optional; the engine should eventually run locally.
-
-## Example package
-```json
-{
-  "schema": "toad-ability-v1",
-  "name": "json-status-check",
-  "version": "0.1.0",
-  "description": "Validate a JSON status record",
-  "files": [{"path": "main.py", "content": "import json\nprint(json.loads('{\\\"ok\\\": true}'))"}],
-  "entrypoint": "main.py",
-  "tests": ["python main.py"],
-  "permissions": []
-}
-```
-
-Never blindly run an untrusted package's tests. Execute only in a separately provisioned sandbox once implemented.
+Next stages are an actual iPhone/deployed-site test, verified containment probes on a suitable host, a small live local-model mission, better capability composition, reviewed dependency images, optional authorized repository/document retrieval, broader language test backends and private host UI integration. No unrestricted self-modification or public arbitrary-code endpoint is planned. Hardware access, paid APIs and other repositories remain outside this implementation.
