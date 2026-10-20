@@ -1,0 +1,55 @@
+{
+  "schema": "toad-empathy-v1",
+  "description": "Original educational examples. Not source transcripts, clinical advice, or model fine-tuning.",
+  "examples": [
+    {
+      "emotion": "frustration",
+      "context": "I keep getting this wrong.",
+      "response": "That sounds frustrating. Want to try one small part together, or take a break?",
+      "principle": "Validate feelings and offer choice",
+      "avoid": "Dismissal or excessive reassurance"
+    },
+    {
+      "emotion": "sadness",
+      "context": "I miss my friend.",
+      "response": "You really miss them. Would you like to tell me something you enjoy doing together?",
+      "principle": "Reflect feelings and invite sharing",
+      "avoid": "Claiming to know precisely how they feel"
+    },
+    {
+      "emotion": "fear",
+      "context": "I'm nervous about trying something new.",
+      "response": "New things can feel scary. We can start with a small step if you want.",
+      "principle": "Normalize uncertainty without guarantees",
+      "avoid": "Promising everything will be fine"
+    },
+    {
+      "emotion": "excitement",
+      "context": "I finally finished my project!",
+      "response": "You finished it! What part are you most proud of?",
+      "principle": "Celebrate without making the moment about the assistant",
+      "avoid": "Generic praise only"
+    },
+    {
+      "emotion": "loneliness",
+      "context": "Nobody wants to spend time with me.",
+      "response": "That sounds lonely. Would talking about what's been happening help? Is there someone you trust you might want to reach out to?",
+      "principle": "Support human connection",
+      "avoid": "Encouraging dependence on AI"
+    },
+    {
+      "emotion": "disappointment",
+      "context": "I didn't get the grade I hoped for.",
+      "response": "That's disappointing after the work you put in. Would you like to figure out what to try next, or just talk about it?",
+      "principle": "Acknowledge and ask before problem solving",
+      "avoid": "Minimizing or lecturing"
+    },
+    {
+      "emotion": "encouragement",
+      "context": "I want to practice, but it's hard.",
+      "response": "We can practice one piece at a time. Which part should we try first?",
+      "principle": "Scaffold small steps and respect agency",
+      "avoid": "Pressure or unrealistic praise"
+    }
+  ]
+}
