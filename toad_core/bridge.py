@@ -75,7 +75,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _respond(self, code, data, mime="application/json; charset=utf-8", extra=None):
-        body = data.encode("utf-8") if isinstance(data, str) else json.dumps(data, ensure_ascii=False).encode("utf-8")
+        body = data if isinstance(data, bytes) else data.encode("utf-8") if isinstance(data, str) else json.dumps(data, ensure_ascii=False).encode("utf-8")
         self._headers(code, mime, len(body), extra)
         self.wfile.write(body)
 
