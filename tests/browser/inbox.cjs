@@ -27,16 +27,19 @@ const server=http.createServer((req,res)=>{
     await page.goto(base);
     await page.fill('#feedinput','```python\nprint("hello")\n```');
     await page.getByRole('button',{name:'Feed Toad',exact:true}).click({timeout:3000});
+    await page.waitForFunction(()=>!document.querySelector('#captureability').disabled);
     assert.match(await page.locator('#abilitymessage').innerText(),/saved.*locally/i);
     assert.equal(await page.locator('[data-ability-id]').count(),1);
     await page.reload();
     assert.equal(await page.locator('[data-ability-id]').count(),1);
     await page.fill('#feedinput','```python\nprint("hello")\n```');
     await page.getByRole('button',{name:'Feed Toad',exact:true}).click();
+    await page.waitForFunction(()=>!document.querySelector('#captureability').disabled);
     assert.match(await page.locator('#abilitymessage').innerText(),/already|duplicate/i);
     assert.equal(await page.locator('[data-ability-id]').count(),1);
     await page.fill('#feedinput','<img src=x onerror="window.feedExecuted=true">');
     await page.getByRole('button',{name:'Feed Toad',exact:true}).click();
+    await page.waitForFunction(()=>!document.querySelector('#captureability').disabled);
     assert.equal(await page.evaluate(()=>Boolean(window.feedExecuted)),false);
     await page.fill('#searchabilities','hello');
     assert.equal(await page.locator('[data-ability-id]').count(),1);
@@ -57,6 +60,7 @@ const server=http.createServer((req,res)=>{
     await page.evaluate(()=>{Storage.prototype.setItem=function(){throw new DOMException('full','QuotaExceededError');};});
     await page.fill('#feedinput','Keep me after a failed save');
     await page.getByRole('button',{name:'Feed Toad',exact:true}).click();
+    await page.waitForFunction(()=>!document.querySelector('#captureability').disabled);
     assert.match(await page.locator('#abilitymessage').innerText(),/could not save|storage|full/i);
     assert.equal(await page.inputValue('#feedinput'),'Keep me after a failed save');
     const corrupt=await context.newPage();
