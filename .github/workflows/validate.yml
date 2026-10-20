@@ -32,6 +32,8 @@ jobs:
           node-version: '22'
       - name: Check browser JavaScript syntax
         run: node --check web/ability-library.js
+      - name: Check HTML inline JavaScript syntax
+        run: python tools/check_inline_js.py
       - name: Compile Python
         run: python -m compileall -q toad_core tools tests
       - name: Unit tests
