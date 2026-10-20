@@ -115,3 +115,20 @@ class ReadinessTests(unittest.TestCase):
             for name in ('lab','model'):
                 self.assertEqual(report['checks'][name]['status'],'not_checked')
                 self.assertIn('blocked',report['checks'][name]['reason'])
+
+    def test_malformed_docker_metadata_blocks_testing_without_losing_report(self):
+        from test_lab import host_info
+        for metadata in ([],{**host_info(),'SecurityOptions':None},{**host_info(),'SecurityOptions':{'name=seccomp,profile=builtin':True}}):
+            with self.subTest(metadata=metadata),tempfile.TemporaryDirectory() as tmp:
+                boundary=DockerBoundary()
+                def malformed(cmd,**kw):
+                    response=boundary(cmd,**kw)
+                    if 'info' in cmd:response['stdout']=json.dumps(metadata)
+                    return response
+                with patch('toad_core.lab.shutil.which',return_value='/usr/bin/docker'),patch('toad_core.lab.run_limited',side_effect=malformed),patch.dict(os.environ,{'TOAD_OLLAMA_URL':'https://example.com'}):
+                    code,out,err=invoke(Path(tmp)/'catalog','--probe')
+                self.assertEqual(code,2,err)
+                report=json.loads(out)
+                self.assertEqual(report['capabilities'],{'library':'ready','testing':'blocked','missions':'blocked'})
+                self.assertTrue(report['checks']['lab']['reason'])
+                self.assertFalse(report['execution_performed'])
