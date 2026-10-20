@@ -20,6 +20,7 @@ The site never uploads feeds to GitHub, executes pasted code, connects to your c
 Requires Python **3.11+**. No runtime pip dependencies. From this repository's checkout:
 
 ```sh
+python -m toad_core doctor
 python -m toad_core status
 python -m toad_core ingest examples/hello.json
 python -m toad_core ingest toad-library.json
@@ -30,9 +31,11 @@ python -m toad_core library show CANDIDATE_ID
 python -m toad_core export --output toad-backup.json
 ```
 
+Use `python -m toad_core doctor` for an offline catalog/setup report, or `python -m toad_core doctor --probe` to also check local Docker and Ollama metadata. [Readiness guide](docs/READINESS.md) explains the results and exit codes. Dependency availability is separate from successful containment and mission tests.
+
 Replace `CANDIDATE_ID` with an ID printed by ingestion or listing. A path of `-` reads a bounded feed from standard input. Supported local files: Python, JavaScript, HTML/CSS, JSON, Markdown, text, TOML/INI/YAML, bounded UTF-8 source ZIPs and v1/v2 manifests/library backups. Links are retained as unverified references; no repository or documentation download occurs automatically.
 
-The catalog is a transactional SQLite file in the user's private data directory, **outside the Git checkout** by default: Linux/macOS `$XDG_DATA_HOME/toad-sage` or `~/.local/share/toad-sage`, Windows `%LOCALAPPDATA%\ToadSage`. Set `TOAD_WORKSPACE`, or put `--workspace PATH` **before** the command. Keep that workspace private and back it up. GitHub is optional after obtaining the code.
+The catalog is a transactional SQLite file in the user's private data directory, **outside the Git checkout** by default: Linux/macOS `$XDG_DATA_HOME/toad-sage` or `~/.local/share/toad-sage`, Windows `%LOCALAPPDATA%\ToadSage`. Set `TOAD_WORKSPACE`, or put `--workspace PATH` **before** the command. Keep that workspace private and back it up. File backups created by the CLI use owner-only POSIX permissions; on Windows, keep exports in a folder protected by your user account’s ACLs. GitHub is optional after obtaining the code.
 
 ```sh
 python -m toad_core --workspace /my/private/toad status

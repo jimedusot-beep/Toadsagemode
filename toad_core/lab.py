@@ -57,10 +57,14 @@ class DockerWorker:
         if not self._ok(info):return {'available':False,'reason':'Local Docker daemon is unavailable or its response exceeded limits'}
         try:data=json.loads(info['stdout'])
         except (ValueError,TypeError):return {'available':False,'reason':'Invalid Docker capability response'}
+        if not isinstance(data,dict):return {'available':False,'reason':'Docker capability response must be an object'}
         required=('MemoryLimit','SwapLimit','PidsLimit','CPUCfsQuota','CPUCfsPeriod')
         if data.get('OSType')!='linux' or data.get('CgroupVersion')!='2' or any(data.get(k) is not True for k in required):
             return {'available':False,'reason':'Linux cgroup v2 and enforceable CPU/memory/swap/PID limits are required'}
-        if not any('seccomp' in x and ('builtin' in x or 'default' in x) for x in data.get('SecurityOptions',[]) if isinstance(x,str)):
+        security=data.get('SecurityOptions')
+        if not isinstance(security,list) or any(not isinstance(x,str) for x in security):
+            return {'available':False,'reason':'Invalid Docker security capability response'}
+        if not any('seccomp' in x and ('builtin' in x or 'default' in x) for x in security):
             return {'available':False,'reason':'Default Docker seccomp enforcement was not confirmed'}
         image=self._call(config,['image','inspect','--format','{{json .}}',self.policy.image])
         if not self._ok(image):return {'available':False,'reason':'Trusted local lab image is missing; no images are pulled automatically'}

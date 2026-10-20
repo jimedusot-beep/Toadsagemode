@@ -2,6 +2,8 @@
 
 Basic ingestion/catalog/queue/export work is entirely offline and needs neither Docker nor a model. Autonomous **Python standard-library** projects additionally need a locally running Ollama server, an installed coding model, and the restricted Docker lab in [LAB.md](LAB.md). No paid API, model pull, fine-tuning, or hardware configuration is performed automatically.
 
+Use `python -m toad_core doctor --probe` for a combined local dependency report and next steps. This sends only metadata requests, never source or generation prompts, and never starts a test container. See [READINESS.md](READINESS.md).
+
 ## Optional Ollama adapter
 
 The default URL is `http://127.0.0.1:11434`, configurable with `TOAD_OLLAMA_URL`. Only loopback HTTP(S) origins are accepted. URL credentials, redirects, proxy forwarding and remote hosts are refused. This keeps source inside the configured local model boundary. It does not protect against a hostile local model service or a host administrator.
