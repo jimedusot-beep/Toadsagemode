@@ -23,7 +23,7 @@ class AgentAndSkillsTests(unittest.TestCase):
             engine = Engine(Path(folder))
             try:
                 candidate = engine.ingest_text("print('hello')", name="hello-demo")
-                agent = ControlledAgent(engine, "trial", model=ScriptedModel([
+                agent = ControlledAgent(engine, "trial", candidate_id=candidate["id"], model=ScriptedModel([
                     {"action": "read_file", "candidate_id": candidate["id"], "path": "main.py"},
                     {"action": "inspect_candidate", "candidate_id": candidate["id"]},
                     {"action": "finish", "message": "done"},
@@ -42,10 +42,10 @@ class AgentAndSkillsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             engine = Engine(Path(folder))
             try:
-                agent = ControlledAgent(engine, "reject", model=ScriptedModel([{"action": "shell", "command": "whoami"}]))
+                candidate = engine.ingest_text("print(1)", name="restriction-demo")\n                agent = ControlledAgent(engine, "reject", candidate_id=candidate["id"], model=ScriptedModel([{"action": "shell", "command": "whoami"}]))
                 self.assertEqual(agent.run("run commands")["status"], "blocked")
                 self.assertEqual(agent.state["actions"], [])
-                duplicate = ControlledAgent(engine, "again")
+                duplicate = ControlledAgent(engine, "again", candidate_id=candidate["id"])
                 duplicate.execute_actions({"action": "finish", "message": "okay"})
                 with self.assertRaises(PackageError):
                     duplicate.execute_actions({"action": "finish", "message": "okay"})
@@ -58,7 +58,7 @@ class AgentAndSkillsTests(unittest.TestCase):
             try:
                 initial = engine.ingest_text("print('before')", name="safe-demo")
                 model = ScriptedModel([{"action": "propose_edit", "candidate_id": initial["id"], "path": "main.py", "content": "print('after')"}])
-                agent = ControlledAgent(engine, "edit", model=model)
+                agent = ControlledAgent(engine, "edit", candidate_id=initial["id"], model=model)
                 output = agent.step("Change greeting")
                 self.assertTrue(output["candidate_id"])
                 self.assertFalse(output["installed"])
