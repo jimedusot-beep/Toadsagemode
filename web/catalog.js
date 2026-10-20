@@ -172,5 +172,14 @@
     if(library.abilities.length>LIMITS.items || bytes(JSON.stringify(library))>LIMITS.backup)throw Error('Merged library exceeds storage limit');
     return {library,added,duplicates};
   }
-  return Object.freeze({LIMITS,STATUSES,bytes,uid,safePath,language,normalizeManifest,createCandidate,normalizeLibrary,mergeLibraries,identity,inspect,parseJSON});
+  function normalizeDraft(data) {
+    const keys=['schema','content','name','description','source','has_files','saved_at'];
+    if(!data || typeof data!=='object' || Array.isArray(data) || data.schema!=='toad-feed-draft-v1' || Object.keys(data).some(k=>!keys.includes(k)))throw Error('Unknown or invalid draft format; download it before clearing');
+    for(const [key,limit] of [['content',LIMITS.file],['name',100],['description',4000],['source',200]]){
+      if(typeof data[key]!=='string' || (key==='content'?bytes(data[key]):data[key].length)>limit)throw Error('Invalid or oversized draft field');
+    }
+    if(typeof data.has_files!=='boolean' || typeof data.saved_at!=='string' || data.saved_at.length>64 || !Number.isFinite(Date.parse(data.saved_at)))throw Error('Invalid draft metadata');
+    return clone(data);
+  }
+  return Object.freeze({LIMITS,STATUSES,bytes,uid,safePath,language,normalizeManifest,createCandidate,normalizeLibrary,mergeLibraries,identity,inspect,parseJSON,normalizeDraft});
 });
