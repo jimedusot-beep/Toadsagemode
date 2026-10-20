@@ -1,0 +1,11 @@
+# Local-first operating principles
+- GitHub and GitHub Pages are temporary conveniences, not requirements for the eventual agent.
+- Store packages, mission state, catalogs, and empathy examples in portable JSON on the user's host.
+- Zero access to banking or payment credentials. No paid API dependencies.
+- Staged inputs are untrusted. Structural validators and keyword flags are NOT security guarantees.
+- Keep the core read-only to agent-installed modules; use reversible versioned modules and offline tests.
+- No automatic execution of pasted or downloaded code from this public website.
+- No automatic access to personal documents, camera, microphone, or physical robot controls.
+- Allow autonomy only inside a constrained workspace; resource and network policy limits are enforced by host, not by prompts.
+- The public GitHub Pages dashboard has no protected server connection and must never contain secrets.
+- Use local Git history plus separate-device backups; the repository itself is not a backup.
