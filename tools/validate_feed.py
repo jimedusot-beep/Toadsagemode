@@ -9,10 +9,10 @@ MAX_BYTES = 512_000
 MAX_FILES = 40
 NAME_RE = re.compile(r"^[a-z][a-z0-9_-]{1,63}$")
 WARNINGS = [(re.compile(p, re.I), note) for p, note in [
-    (r"\\b(?:eval|exec|os\\.system|subprocess\\.)", "dynamic/host command execution"),
-    (r"\\b(?:shutil\\.rmtree|os\\.remove|unlink)\\b", "file deletion"),
-    (r"\\b(?:requests\\.|urllib\\.|https?://)", "network access"),
-    (r"\\b(?:password|secret|api[_-]?key|private[_-]?key|token)\\b", "potential secret"),
+    (r"\b(?:eval|exec|os\.system|subprocess\.)", "dynamic/host command execution"),
+    (r"\b(?:shutil\.rmtree|os\.remove|unlink)\b", "file deletion"),
+    (r"\b(?:requests\.|urllib\.|https?://)", "network access"),
+    (r"\b(?:password|secret|api[_-]?key|private[_-]?key|token)\b", "potential secret"),
 ]]
 
 
@@ -25,7 +25,7 @@ def validate(data):
     name = data.get("name")
     if not isinstance(name, str) or not NAME_RE.fullmatch(name):
         errors.append("Invalid module name")
-    if not isinstance(data.get("version"), str) or not re.fullmatch(r"\\d+\\.\\d+\\.\\d+", data["version"]):
+    if not isinstance(data.get("version"), str) or not re.fullmatch(r"\d+\.\d+\.\d+", data["version"]):
         errors.append("Version must be major.minor.patch")
     files = data.get("files")
     if not isinstance(files, list) or not 1 <= len(files) <= MAX_FILES:
@@ -36,7 +36,7 @@ def validate(data):
             errors.append(f"File {i} must be an object")
             continue
         path, content = item.get("path"), item.get("content")
-        if not isinstance(path, str) or not path or "\\\\" in path or "\\x00" in path:
+        if not isinstance(path, str) or not path or "\\" in path or "\x00" in path:
             errors.append(f"File {i}: invalid path")
             continue
         p = PurePosixPath(path)
