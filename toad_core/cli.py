@@ -20,6 +20,15 @@ def parser():
     for action in ('show','archive','restore','delete','install'):
         item=sub.add_parser(action);item.add_argument('id')
     commands.add_parser('status')
+    skills=commands.add_parser('skills',help='Quarantined skill descriptions')
+    sk=skills.add_subparsers(dest='action',required=True)
+    imp=sk.add_parser('import');imp.add_argument('path');imp.add_argument('--kind',choices=['knowledge','workflow','executable'],default='knowledge');imp.add_argument('--permission',action='append',default=[])
+    ls=sk.add_parser('list');ls.add_argument('--search',default='');ls.add_argument('--kind',choices=['knowledge','workflow','executable'])
+    agent=commands.add_parser('agent',help='Experimental bounded candidate agent')
+    ast=agent.add_subparsers(dest='action',required=True)
+    ar=ast.add_parser('run');ar.add_argument('id');ar.add_argument('--candidate-id',required=True);ar.add_argument('--goal',required=True)
+    at=ast.add_parser('trace');at.add_argument('id');at.add_argument('--candidate-id',required=True)
+
     bridge=commands.add_parser('bridge',help='Start loopback-only private phone bridge (no remote execution)')
     bridge.add_argument('--port',type=int,default=8765)
     doctor=commands.add_parser('doctor',help='Check local readiness without running candidate code')
@@ -60,6 +69,17 @@ def write_output(path,data,force=False):
 
 
 def dispatch(engine,args):
+    if args.command=='skills':
+        from .skills import SkillCatalog
+        registry=SkillCatalog(engine.store.workspace)
+        if args.action=='list':return registry.search(args.search,kind=args.kind)
+        source=Path(args.path)
+        if source.is_symlink() or source.stat().st_size>120000:raise PackageError('Unsafe/oversized skill input')
+        return registry.register(source.read_text(encoding='utf-8'),kind=args.kind,permissions=args.permission,compatibility={})
+    if args.command=='agent':
+        from .controlled_agent import ControlledAgent
+        controller=ControlledAgent(engine,args.id,candidate_id=args.candidate_id)
+        return controller.run(args.goal) if args.action=='run' else controller.state
     if args.command=='ingest':
         options={k:v for k,v in {'name':args.name,'source':args.source}.items() if v is not None}
         if args.path=='-':
