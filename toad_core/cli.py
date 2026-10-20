@@ -20,6 +20,8 @@ def parser():
     for action in ('show','archive','restore','delete','install'):
         item=sub.add_parser(action);item.add_argument('id')
     commands.add_parser('status')
+    bridge=commands.add_parser('bridge',help='Start loopback-only private phone bridge (no remote execution)')
+    bridge.add_argument('--port',type=int,default=8765)
     doctor=commands.add_parser('doctor',help='Check local readiness without running candidate code')
     doctor.add_argument('--probe',action='store_true',help='Also query local Docker and Ollama metadata; no downloads or candidate execution')
     model=commands.add_parser('model');model.add_argument('action',choices=['status'])
@@ -111,6 +113,11 @@ def main(argv=None):
             print(json.dumps(result,indent=2,ensure_ascii=False))
             if result['capabilities']['library']!='ready':return 1
             return 2 if args.probe and result['capabilities']['missions']!='ready' else 0
+        if args.command=='bridge':
+            from .bridge import serve
+            if not 1024<=args.port<=65535:raise ValueError('Choose an unprivileged port 1024–65535')
+            serve(args.workspace,args.port)
+            return 0
         engine=Engine(args.workspace);result=dispatch(engine,args)
         print(json.dumps(result,indent=2,ensure_ascii=False))
         if args.command=='test' and not result.get('passed'):return 1
