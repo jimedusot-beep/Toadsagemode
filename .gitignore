@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+.toad/
+.toad-data/
+node_modules/
+playwright-report/
+test-results/
+dist/
+.superpowers/

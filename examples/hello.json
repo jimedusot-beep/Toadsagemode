@@ -1,0 +1,11 @@
+{
+  "schema": "toad-ability-v2",
+  "name": "hello-demo",
+  "version": "0.1.0",
+  "description": "Harmless example: print a deterministic greeting",
+  "files": [{"path": "main.py", "content": "print(\"hello\")\n"}],
+  "entrypoint": "main.py",
+  "permissions": [],
+  "dependencies": [],
+  "tests": [{"kind": "python", "path": "main.py", "expected_stdout": "hello\n"}]
+}

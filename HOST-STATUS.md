@@ -1,9 +1,9 @@
-# Sage Toad Mode integration status
-- GitHub Pages: live dashboard (verified by user screenshot).
-- Acer runtime: not installed or tested.
-- GitHub Codespaces runtime: not installed or tested.
-- Python agent: previously supplied as a separate downloadable package, not yet committed to this repository.
-- Model: qwen2.5-coder:1.5b suggested; not yet pulled or tested.
-- The dashboard manages/export tasks locally in the browser; it does not execute scripts remotely.
-- Never commit SSH keys, API tokens, or passwords.
-- A safe integration requires an authenticated service that does not expose arbitrary shell execution to a public static website.
+# Implementation and host status — 20 October 2026
+
+- Browser inbox v2 and local Python engine implemented in this repository; no separate agent.py package is required.
+- Nonexecuting ingestion, static analysis, SQLite catalog, migration, queue, backups, restricted-worker orchestration, receipt-bound sandbox activation/rollback, Ollama adapter and durable mission foundations implemented.
+- Desktop WebKit with iPhone viewport exercises browser behavior; it is not a physical iPhone Safari test.
+- This development host has Python 3.12 / Node 24. Docker is absent; the live containment probe is blocked. Ollama at loopback is unavailable; live inference is unverified.
+- Worker/mission tests use explicit boundary doubles. Model HTTP tests use a controlled local test server. No claim that a live coding model completed a mission here.
+- Acer and Codespaces installation remain unverified. Check their actual resources and isolation using the setup guides.
+- No private feeds are committed, no other repositories are modified, no host execution fallback or public execution endpoint exists.

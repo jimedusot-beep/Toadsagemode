@@ -22,3 +22,9 @@ class ValidatorTests(unittest.TestCase):
         p["files"][0]["path"]="../escape.py"
         errors,_=validate(p)
         self.assertTrue(any("unsafe path" in e for e in errors),errors)
+
+class ValidatorBoundaryTests(unittest.TestCase):
+    def test_direct_api_rejects_oversize_and_nonstring_permissions(self):
+        p={'schema':'toad-ability-v1','name':'demo','version':'0.1.0','files':[{'path':'main.py','content':'x'*250001}],'entrypoint':'main.py','permissions':[{'admin':True}],'tests':[]}
+        errors,_=validate(p)
+        self.assertTrue(errors)
