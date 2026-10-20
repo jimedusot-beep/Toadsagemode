@@ -28,3 +28,5 @@ Baseline: f6e9d0939493cdbcd21d9c57b82e12ab38efc034
 - Final: Ruling on declined live containment/inference — unavailable Docker/Ollama remain blocked and unverified, as the user's mission permits; cost: actual host validation is still required.
 - Final: Ruling on candidate-authored test assertions — test success is limited evidence of configured behavior, not a safety certification; sandbox-only grants remain empty. Cost: inadequate tests can miss logical/malicious behavior, so application-quality evaluation remains necessary.
 - Deferred minors: none.
+
+- PR follow-up: reproduced and repaired all three automated review findings before merge. POSIX workspace/database/sidecars are secured before SQLite opens (failure blocks opening); ZIP metadata no longer consumes the 40-source allowance; archive restore retains verified status only with a matching successful local Docker receipt and unchanged package digest. Seven regressions fail before the fixes and pass afterward; complete Python suite 73/73 and Node 10/10.

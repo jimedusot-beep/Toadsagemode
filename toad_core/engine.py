@@ -49,6 +49,14 @@ class Engine:
         def change(r):
             if r['installed']:raise PackageError('Deactivate the candidate before archiving')
             r['status']=status_for_report(r['validation_results']) if restore else 'archived'
+            if restore:
+                receipt=self.store.latest_receipt(identifier)
+                verified=(r['verification']=='verified' and package_digest(r['manifest'])==r['digest']
+                          and receipt and receipt.get('passed') is True and receipt.get('executed') is True
+                          and receipt.get('backend')=='docker' and receipt.get('cleanup_ok') is True
+                          and receipt.get('digest')==r['digest'])
+                r['verification']='verified' if verified else 'unverified'
+                if verified:r['status']='verified'
             r['history'].append({'event':'restored' if restore else 'archived','at':ingestion.timestamp()})
         return self.store.mutate(identifier,change)
     def delete(self,identifier):self.store.delete(identifier)

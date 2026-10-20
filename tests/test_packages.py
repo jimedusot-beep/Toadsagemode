@@ -142,3 +142,16 @@ class ZipManifestCollisionTests(unittest.TestCase):
                         with zipfile.ZipFile(target,'w') as z:
                             for filename,body in entries:z.writestr(filename,body)
                     with self.assertRaises(PackageError):ingest_path(target)
+
+class ZipSourceLimitTests(unittest.TestCase):
+    def test_manifest_does_not_consume_a_source_file_slot(self):
+        p=package()
+        p['files'] += [{'path':f'module_{i}.py','content':f'# source {i}\n'} for i in range(39)]
+        with tempfile.TemporaryDirectory() as tmp:
+            target=Path(tmp)/'maximum.zip'
+            with zipfile.ZipFile(target,'w') as archive:
+                archive.writestr('toad-ability.json',json.dumps(p))
+                for f in p['files']:archive.writestr(f['path'],f['content'])
+            self.assertEqual(len(ingest_path(target)['manifest']['files']),40)
+            with zipfile.ZipFile(target,'a') as archive:archive.writestr('extra.py','# overflow\n')
+            with self.assertRaisesRegex(PackageError,'Too many ZIP source files'):ingest_path(target)

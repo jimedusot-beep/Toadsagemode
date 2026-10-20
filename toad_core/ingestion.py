@@ -84,6 +84,7 @@ def read_bounded(path,maximum):
 def ingest_zip(path, *, name=None, source=None):
     read_bounded(path,MAX_PACKAGE_BYTES)
     files,total=[],0
+    source_count=0
     seen_entries=set();directory_spellings={};file_paths=set()
     try:
         with zipfile.ZipFile(path) as archive:
@@ -112,7 +113,8 @@ def ingest_zip(path, *, name=None, source=None):
                 raw=archive.read(info)
                 if len(raw)!=info.file_size:raise PackageError('ZIP file size mismatch')
                 files.append({'path':info.filename,'content':raw.decode('utf-8-sig')})
-                if len(files)>MAX_FILES:raise PackageError('Too many ZIP source files')
+                if info.filename!='toad-ability.json':source_count+=1
+                if source_count>MAX_FILES:raise PackageError('Too many ZIP source files')
     except (zipfile.BadZipFile,UnicodeError,RuntimeError) as exc:raise PackageError('Invalid ZIP/text source') from exc
     if not files:raise PackageError('ZIP contains no supported source files')
     manifests=[f for f in files if f['path']=='toad-ability.json']

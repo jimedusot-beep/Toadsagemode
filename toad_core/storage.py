@@ -1,6 +1,7 @@
 """Private transactional storage for trusted orchestration, never candidate code."""
 from __future__ import annotations
 import json
+import os
 import sqlite3
 import time
 import uuid
@@ -15,7 +16,18 @@ class Store:
         self.workspace=Path(workspace).expanduser().resolve()
         self.workspace.mkdir(parents=True,exist_ok=True,mode=0o700)
         db=self.workspace/'catalog.sqlite3'
-        if db.is_symlink():raise PackageError('Refusing a symlinked catalog')
+        # Secure existing directories before SQLite can create a WAL or write data.
+        # On Windows the caller must provide a workspace protected by user ACLs.
+        try:
+            if os.name=='posix':self.workspace.chmod(0o700)
+            for path in (db,Path(str(db)+'-wal'),Path(str(db)+'-shm'),Path(str(db)+'-journal')):
+                if path.is_symlink():raise PackageError('Refusing a symlinked catalog or sidecar')
+                if path.exists() and os.name=='posix':path.chmod(0o600)
+            descriptor=os.open(db,os.O_CREAT|os.O_RDWR|getattr(os,'O_NOFOLLOW',0),0o600)
+            try:
+                if os.name=='posix':os.fchmod(descriptor,0o600)
+            finally:os.close(descriptor)
+        except OSError as exc:raise PackageError('Cannot secure the private catalog workspace') from exc
         self.connection=sqlite3.connect(db,timeout=10)
         self.connection.row_factory=sqlite3.Row
         self.connection.executescript('''
@@ -33,8 +45,6 @@ class Store:
         if version and version[0]!='2':raise PackageError('Unsupported catalog schema; no migration is available')
         self.connection.execute("INSERT OR IGNORE INTO meta VALUES('schema_version','2')")
         self.connection.commit()
-        try:db.chmod(0o600)
-        except OSError:pass  # Windows ACLs are managed by the user's private workspace.
 
     def close(self):self.connection.close()
 

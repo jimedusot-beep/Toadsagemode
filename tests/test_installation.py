@@ -58,3 +58,26 @@ class InstallationTests(unittest.TestCase):
         a=self.verified();self.registry.activate(a['id']);self.registry.deactivate(a['name'])
         with patch('toad_core.lab.shutil.which',return_value='/usr/bin/docker'),patch('toad_core.lab.run_limited',side_effect=DockerBoundary()):self.engine.test(a['id'])
         self.assertEqual(self.registry.activate(a['id'])['candidate_id'],a['id'])
+
+    def test_verified_archive_restore_preserves_local_evidence_and_activation(self):
+        a=self.verified()
+        self.assertEqual(self.engine.archive(a['id'])['status'],'archived')
+        self.assertEqual(self.engine.archive(a['id'],restore=True)['status'],'verified')
+        self.assertEqual(self.registry.activate(a['id'])['candidate_id'],a['id'])
+
+    def test_restore_does_not_trust_claims_without_local_receipt(self):
+        a=self.engine.ingest_package(package())
+        self.engine.store.mutate(a['id'],lambda r:r.update(verification='verified',test_results=[{'passed':True,'backend':'docker'}]))
+        self.engine.archive(a['id'])
+        restored=self.engine.archive(a['id'],restore=True)
+        self.assertNotEqual(restored['status'],'verified')
+        self.assertEqual(restored['verification'],'unverified')
+        with self.assertRaises(PackageError):self.registry.activate(a['id'])
+
+    def test_restore_does_not_reuse_receipt_after_manifest_changes(self):
+        a=self.verified();self.engine.archive(a['id'])
+        self.engine.store.mutate(a['id'],lambda r:r['manifest']['files'][0].update(content='print("changed")'))
+        restored=self.engine.archive(a['id'],restore=True)
+        self.assertNotEqual(restored['status'],'verified')
+        self.assertEqual(restored['verification'],'unverified')
+        with self.assertRaises(PackageError):self.registry.activate(a['id'])
