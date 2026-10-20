@@ -2,6 +2,7 @@
 from __future__ import annotations
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from .engine import Engine
@@ -19,6 +20,8 @@ def parser():
     for action in ('show','archive','restore','delete','install'):
         item=sub.add_parser(action);item.add_argument('id')
     commands.add_parser('status')
+    doctor=commands.add_parser('doctor',help='Check local readiness without running candidate code')
+    doctor.add_argument('--probe',action='store_true',help='Also query local Docker and Ollama metadata; no downloads or candidate execution')
     model=commands.add_parser('model');model.add_argument('action',choices=['status'])
     mission=commands.add_parser('mission');ms=mission.add_subparsers(dest='action',required=True)
     mc=ms.add_parser('create');mc.add_argument('goal');mc.add_argument('--max-model-calls',type=int,default=6);mc.add_argument('--max-test-runs',type=int,default=4);mc.add_argument('--max-repairs',type=int,default=2);mc.add_argument('--max-seconds',type=float,default=180)
@@ -41,9 +44,10 @@ def write_output(path,data,force=False):
     target=Path(path).expanduser();target.parent.mkdir(parents=True,exist_ok=True)
     # Exclusive create protects existing files; replace is only enabled by explicit --force.
     if not force:
-        with target.open('x',encoding='utf-8') as f:json.dump(data,f,indent=2,ensure_ascii=False);f.write('\n')
+        fd=os.open(target,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+        with os.fdopen(fd,'w',encoding='utf-8') as f:json.dump(data,f,indent=2,ensure_ascii=False);f.write('\n')
     else:
-        import os,tempfile
+        import tempfile
         fd,temp=tempfile.mkstemp(prefix='.toad-export-',dir=target.parent)
         try:
             with os.fdopen(fd,'w',encoding='utf-8') as f:json.dump(data,f,indent=2,ensure_ascii=False);f.write('\n')
@@ -101,6 +105,12 @@ def dispatch(engine,args):
 def main(argv=None):
     args=parser().parse_args(argv);engine=None
     try:
+        if args.command=='doctor':
+            from .readiness import readiness
+            result=readiness(args.workspace,probe=args.probe)
+            print(json.dumps(result,indent=2,ensure_ascii=False))
+            if result['capabilities']['library']!='ready':return 1
+            return 2 if args.probe and result['capabilities']['missions']!='ready' else 0
         engine=Engine(args.workspace);result=dispatch(engine,args)
         print(json.dumps(result,indent=2,ensure_ascii=False))
         if args.command=='test' and not result.get('passed'):return 1
