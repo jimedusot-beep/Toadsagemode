@@ -42,7 +42,8 @@ class AgentAndSkillsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             engine = Engine(Path(folder))
             try:
-                candidate = engine.ingest_text("print(1)", name="restriction-demo")\n                agent = ControlledAgent(engine, "reject", candidate_id=candidate["id"], model=ScriptedModel([{"action": "shell", "command": "whoami"}]))
+                candidate = engine.ingest_text("print(1)", name="restriction-demo")
+                agent = ControlledAgent(engine, "reject", candidate_id=candidate["id"], model=ScriptedModel([{"action": "shell", "command": "whoami"}]))
                 self.assertEqual(agent.run("run commands")["status"], "blocked")
                 self.assertEqual(agent.state["actions"], [])
                 duplicate = ControlledAgent(engine, "again", candidate_id=candidate["id"])
