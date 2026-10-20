@@ -1,0 +1,31 @@
+name: Validate Toad Sage foundations
+on:
+  push:
+    paths:
+      - 'toad_core/**'
+      - 'tools/**'
+      - 'empathy/**'
+      - 'tests/**'
+      - '.github/workflows/validate.yml'
+  pull_request:
+    paths:
+      - 'toad_core/**'
+      - 'tools/**'
+      - 'empathy/**'
+      - 'tests/**'
+      - '.github/workflows/validate.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile Python
+        run: python -m compileall -q toad_core tools tests
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
