@@ -4,6 +4,33 @@ A local-first absorption inbox and Python development engine. Save ideas or sour
 
 [Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
 
+
+## Experimental private phone bridge and bounded agent
+
+The public GitHub Pages inbox remains **offline and browser-only**. For a real
+private connection between an iPhone and a running local Acer engine, use
+`python -m toad_core bridge --port 8765` on the authorized host and a
+**private HTTPS** ingress. Never forward the bridge publicly or upload a
+pairing code. The private console saves feeds into SQLite and shows catalog/
+mission status; it intentionally provides **no remote execution command**.
+Read [Private Bridge and security setup](docs/PRIVATE-BRIDGE.md).
+
+Experimental local-only modules now include a bounded per-candidate agent,
+disposable Git edits/diffs, and quarantined SKILL.md metadata:
+
+```sh
+python -m toad_core skills import MY_SKILL.md --kind knowledge
+python -m toad_core skills list --search debugging
+python -m toad_core agent run demo1 --candidate-id CANDIDATE_ID --goal "Inspect this source and propose a tested repair"
+python tools/calculator_demo.py              # preflight only
+python tools/calculator_demo.py --run        # REAL Ollama + Docker, only on a provisioned host
+```
+
+These are not claims that the Acer, model, private HTTPS endpoint or Docker
+sandbox has been provisioned. A successful real calculator run must produce
+an actual restricted Docker receipt and project ZIP. See the detailed bridge
+documentation for scope, tests, and upstream mini-SWE-agent MIT attribution.
+
 ## Feed Toad on iPhone
 
 1. Open the dashboard in ordinary Safari.
