@@ -7,6 +7,8 @@ and restricted Docker lab; blocked prerequisites do not silently simulate.
 import argparse
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from toad_core.readiness import readiness
 from toad_core.engine import Engine
 from toad_core.mission_engine import MissionEngine, MissionBudget
