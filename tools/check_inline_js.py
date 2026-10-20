@@ -7,7 +7,7 @@ import tempfile
 
 page = Path(__file__).resolve().parents[1] / "index.html"
 html = page.read_text(encoding="utf-8")
-scripts = re.findall(r"<script(?:\\s[^>]*)?>(.*?)</script>", html, re.DOTALL | re.IGNORECASE)
+scripts = re.findall(r"<script(?:\s[^>]*)?>(.*?)</script>", html, re.DOTALL | re.IGNORECASE)
 if not scripts:
     raise SystemExit("No inline scripts found")
 for number, script in enumerate(scripts, 1):
