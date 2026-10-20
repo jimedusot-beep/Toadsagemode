@@ -210,7 +210,42 @@ async function importDraft(browser,base){
   }finally{await context.close();}
 }
 
+
+async function escapedDraft(browser,base){
+  const context=await browser.newContext({...devices['iPhone 13'],acceptDownloads:true});
+  try{
+    const page=await context.newPage();await page.goto(base);await page.locator('.feed summary').click();
+    // Small paste interactions are covered above; inject this large byte-boundary fixture.
+    await page.evaluate(()=>{const input=document.querySelector('#feedinput');input.value='\u0001'.repeat(90000);input.dispatchEvent(new Event('input',{bubbles:true}));});
+    await draftSaved(page);
+    const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Download draft',exact:true}).click();
+    const buffer=fs.readFileSync(await (await downloaded).path());
+    assert.ok(buffer.length>512000,'JSON escaping can exceed source-package bytes for a valid draft');
+    await page.getByRole('button',{name:'Clear input',exact:true}).click();
+    await page.setInputFiles('#importdraft',{name:'toad-feed-draft.json',mimeType:'application/json',buffer});
+    await page.waitForFunction(()=>document.querySelector('#importdraft').value==='');
+    assert.equal((await page.inputValue('#feedinput')).length,90000,'a valid downloaded draft must restore at its encoded size');
+  }finally{await context.close();}
+}
+
+
+async function manualRecovery(browser,base){
+  const context=await browser.newContext({...devices['iPhone 13'],acceptDownloads:true});
+  try{
+    const page=await context.newPage();await page.goto(base);
+    await page.evaluate(()=>{const input=document.querySelector('#feedinput');input.value='x'.repeat(250001);input.dispatchEvent(new Event('input',{bubbles:true}));});
+    await page.waitForFunction(()=>document.querySelector('#draftstatus').textContent.includes('Could not update'));
+    const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Download draft',exact:true}).click();
+    const file=await downloaded,raw=JSON.parse(fs.readFileSync(await file.path(),'utf8'));
+    assert.equal(file.suggestedFilename(),'toad-draft-manual-recovery.json');
+    assert.equal(raw.schema,'toad-feed-draft-recovery-v1');
+    assert.equal(raw.draft.content.length,250001);
+    assert.match(await page.locator('#abilitymessage').innerText(),/manual recovery.*cannot.*restore/i);
+    assert.equal((await page.inputValue('#feedinput')).length,250001);
+  }finally{await context.close();}
+}
+
 module.exports=async(browser,base)=>{
-  const cases={reload:reloadDraft,stale:staleTab,fallback:(b,u)=>staleTab(b,u,true),attachments,denied:deniedDraft,unreadable:unreadableDraft,metadata:pendingMetadata,import:delayedImport,newer:newerDraft,queued:queuedWriter,recover:importDraft};
+  const cases={reload:reloadDraft,stale:staleTab,fallback:(b,u)=>staleTab(b,u,true),attachments,denied:deniedDraft,unreadable:unreadableDraft,metadata:pendingMetadata,import:delayedImport,newer:newerDraft,queued:queuedWriter,recover:importDraft,escaped:escapedDraft,manual:manualRecovery};
   for(const [name,run] of Object.entries(cases))if(!process.env.TOAD_PHONE_CASE || process.env.TOAD_PHONE_CASE===name){await run(browser,base);console.log('PASS: phone '+name);}
 };

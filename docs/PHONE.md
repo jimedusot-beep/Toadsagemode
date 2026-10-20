@@ -14,7 +14,7 @@ Drafts use this tab's session storage. Reload recovery is not a promise of recov
 
 ## Save a draft in Files
 
-**Download draft** exports unsent text and its optional fields as `toad-feed-draft.json`. To recover it later, open **Add a name, description, source, or files**, then choose the file under **Restore a downloaded draft**. Restoration fills the editor; it does not feed, verify or install anything. Invalid/future draft formats are refused without replacing the current editor.
+**Download draft** exports unsent text and its optional fields as `toad-feed-draft.json`. To recover it later, open **Add a name, description, source, or files**, then choose the file under **Restore a downloaded draft**. Restoration fills the editor; it does not feed, verify or install anything. Invalid/future draft formats are refused without replacing the current editor. Imports allow up to 2 MB of encoded JSON while keeping pasted text at 250,000 UTF-8 bytes and bounded optional fields; escaping can make a valid draft file larger than its text. Oversized editor contents download as an explicitly labeled manual recovery file, preserving the material without claiming it can be automatically restored.
 
 If replacing unsent material, download that material first. Confirmation is required before replacing an existing draft. A library backup and a draft download are different files; use their respective import controls.
 

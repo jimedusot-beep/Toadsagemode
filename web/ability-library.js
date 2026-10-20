@@ -147,10 +147,12 @@
   $('downloaddraft').onclick=()=>{try{
     if(!draftReadable && draftRaw!==null){download(draftRaw,'toad-draft-recovery.txt','text/plain');notice('Raw draft recovery download prepared.');return;}
     const fields=draftFields();if(!fields.content && !fields.name && !fields.description && !fields.source && !fields.has_files)throw Error('There is no unsent draft to download.');
+    let invalid=null;try{C.normalizeDraft(fields);}catch(e){invalid=e.message;}
+    if(invalid){download(JSON.stringify({schema:'toad-feed-draft-recovery-v1',reason:invalid,draft:fields},null,2),'toad-draft-manual-recovery.json');notice('Manual recovery download prepared. This exceeds draft limits and cannot be restored automatically. Attached file contents are not included.');return;}
     download(JSON.stringify(fields,null,2),'toad-feed-draft.json');notice('Draft download prepared. Attached file contents are not included.');
   }catch(e){notice(e.message,true);}};
   $('importdraft').onchange=async e=>{try{
-    const file=e.target.files[0];if(!file)return;if(file.size>C.LIMITS.package)throw Error('Draft exceeds 512 KB.');
+    const file=e.target.files[0];if(!file)return;if(file.size>C.LIMITS.backup)throw Error('Encoded draft exceeds 2 MB.');
     const revision=draftRevision,fields=C.normalizeDraft(C.parseJSON(await file.text()));
     if(revision!==draftRevision)throw Error('The draft changed while reading this file. Review your input and try again.');
     const current=draftFields();
