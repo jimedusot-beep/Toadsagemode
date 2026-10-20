@@ -15,7 +15,8 @@ import os
 import secrets
 import time
 from pathlib import Path
-from .engine import Engine\nfrom .git_drafts import GitDraft
+from .engine import Engine
+from .git_drafts import GitDraft
 from .models import OllamaAdapter, ModelError
 from .repair import validate_repair
 from .schema import PackageError
@@ -47,8 +48,14 @@ class ControlledAgent:
             self.state = json.loads(self.path.read_text("utf-8"))
             if self.state.get("schema") != "toad-agent-trajectory-v1":
                 raise PackageError("Unsupported trajectory format")
+            if candidate_id is not None and candidate_id not in self.state.get("allowed_candidates", []):
+                raise PackageError("Candidate ID is outside this trajectory")
         else:
-            if not candidate_id:\n                raise ValueError("New agent trajectory requires an explicit candidate ID")\n            engine.get(candidate_id)\n            self.state = {"schema": "toad-agent-trajectory-v1", "id": identifier, "status": "ready", "actions": [],\n                          "allowed_candidates": [candidate_id],
+            if not candidate_id:
+                raise ValueError("New agent trajectory requires an explicit candidate ID")
+            engine.get(candidate_id)
+            self.state = {"schema": "toad-agent-trajectory-v1", "id": identifier, "status": "ready", "actions": [],
+                          "allowed_candidates": [candidate_id],
                           "model_calls": 0, "started_at": time.time(), "pending": None}
             self._save()
 
@@ -70,8 +77,8 @@ class ControlledAgent:
         identifier = action.get("candidate_id")
         if tool == "finish":
             return {"completed": True, "message": str(action.get("message", ""))[:500]}
-        if not isinstance(identifier, str):
-            raise PackageError("Candidate ID required")
+        if not isinstance(identifier, str) or identifier not in self.state.get("allowed_candidates", []):
+            raise PackageError("Candidate must belong to this trajectory")
         candidate = self.engine.get(identifier)
         if tool == "read_file":
             path = action.get("path")
@@ -102,7 +109,10 @@ class ControlledAgent:
             if not changed:
                 return {"unchanged": True, "candidate_id": identifier}
             record = self.engine.ingest_package(validated, source="bounded-agent-edit")
-            return {"candidate_id": record["id"], "changed_paths": changed, "diff": revision["diff"][:3000],\n                    "git_revision": revision["revision"], "installed": False, "executed": False}
+            if record["id"] not in self.state["allowed_candidates"]:
+                self.state["allowed_candidates"].append(record["id"])
+            return {"candidate_id": record["id"], "changed_paths": changed, "diff": revision["diff"][:3000],
+                    "git_revision": revision["revision"], "installed": False, "executed": False}
         if tool == "test_candidate":
             result = self.engine.test(identifier, self.worker)
             return {"passed": result.get("passed", False), "executed": result.get("executed", False),
@@ -142,7 +152,9 @@ class ControlledAgent:
                              "Candidate ID is required except for finish.",
                              "Existing tests, permissions, dependencies and protected core cannot be modified.",
                              "Observe results before proposing another action; finish if blocked."],
-            "allowed_candidate_ids": self.state.get("allowed_candidates", []),\n            "observations": self.state["actions"][-5:],
+            "allowed_candidate_ids": self.state.get("allowed_candidates", []),
+            "allowed_candidate_ids": self.state.get("allowed_candidates", []),
+            "observations": self.state["actions"][-5:],
         }, ensure_ascii=False)
         return self.model.generate_json(prompt, purpose="bounded candidate actions")
 
