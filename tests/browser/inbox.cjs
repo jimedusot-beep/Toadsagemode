@@ -15,11 +15,12 @@ const server=http.createServer((req,res)=>{
 });
 (async()=>{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  const base='http://127.0.0.1:'+server.address().port;
+  const base=process.env.TOAD_BASE_URL || 'http://127.0.0.1:'+server.address().port;
   let browser;
   try{
     const type=process.env.TOAD_BROWSER==='chromium'?chromium:webkit;
     browser=await type.launch({headless:true,...(process.env.TOAD_BROWSER_EXECUTABLE?{executablePath:process.env.TOAD_BROWSER_EXECUTABLE}:{})});
+    await require('./phone-flows.cjs')(browser,base);
     const context=await browser.newContext({...devices['iPhone 13'],acceptDownloads:true});
     const page=await context.newPage(), errors=[];
     page.on('pageerror',e=>errors.push(e.message));

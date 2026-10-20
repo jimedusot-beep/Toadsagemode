@@ -11,6 +11,8 @@ A local-first absorption inbox and Python development engine. Save ideas or sour
 3. Press **Feed Toad**. The confirmation must say it was saved locally.
 4. Find it in the inbox below; expand its inspection/files, edit its name, search, archive or delete it.
 
+Unsent text and optional fields are kept as a separate draft in the current tab when storage permits. Wait for the draft confirmation before reloading. Download/restore drafts through Files; attachment contents must be selected again. See the [phone-only guide](docs/PHONE.md) for recovery, privacy and multi-tab limits.
+
 Optional text/source uploads are available under “Add a name, description, source, or files.” Names are automatic. Export a backup regularly, and keep it outside Safari. Backup import **merges** unique entries; it never replaces the inbox. Storage/quota failures retain your input and show an error. Unreadable data can be downloaded raw before resetting. Private browsing is unsuitable for durable storage, even when a browser permits saving in that session.
 
 The site never uploads feeds to GitHub, executes pasted code, connects to your computer, or requests a model API key. Source previews use text rendering. Avoid entering secrets and avoid shared-device storage. GitHub Pages still serves the public application assets; feeds stay in your browser. There is no service worker; versioned script URLs reduce stale-asset confusion. A real iPhone retest remains necessary after deployment.

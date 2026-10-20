@@ -7,15 +7,16 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Toad Sage Mode · Feed Inbox</title>
-  <link rel="stylesheet" href="web/styles.css?v=20261020-2">
-  <script src="web/catalog.js?v=20261020-2" defer></script>
-  <script src="web/ability-library.js?v=20261020-2" defer></script>
+  <link rel="stylesheet" href="web/styles.css?v=20261020-3">
+  <script src="web/catalog.js?v=20261020-3" defer></script>
+  <script src="web/ability-library.js?v=20261020-3" defer></script>
 </head>
 <body>
   <a class="skip" href="#feedinput">Skip to Feed Toad</a>
   <header><span class="toad" aria-hidden="true">🐸</span><div><p class="eyebrow">ABSORPTION PROTOCOL</p><h1>Toad Sage Mode</h1><p class="small">Your ideas, safely collected. One feed at a time.</p></div></header>
   <main>
     <p class="privacy">On this device · No feed uploads · Nothing runs in this inbox</p>
+    <p class="small">Using only your phone? Collect feeds, review them, and export backups here. Project generation and restricted tests require the local engine on a computer.</p>
     <div id="storagebanner" role="status">Loading inbox… If this message stays, reload the page to fetch its scripts. Your pasted material will not be saved until the inbox loads.</div>
     <noscript><p class="error">JavaScript is required for local saving. Enable JavaScript in Safari and reload.</p></noscript>
     <section class="card feed" aria-labelledby="feedtitle">
@@ -23,7 +24,9 @@
       <p>Paste an idea, code, notes, or an error report from ChatGPT, Gemini, or anywhere you work.</p>
       <label for="feedinput">What should Toad absorb?</label>
       <textarea id="feedinput" rows="8" placeholder="Paste your material here…" spellcheck="false"></textarea>
-      <div class="actions"><button id="captureability" class="primary" type="button" disabled>Feed Toad</button><button id="clearfeed" type="button">Clear input</button></div>
+      <p id="draftstatus" class="small" role="status" aria-live="polite">Unsent text is kept as a draft in this tab when storage permits. Drafts are separate from inbox backups.</p>
+      <div id="draftfilewarning" hidden><p class="error">The draft had attachments. Select those files again before feeding Toad, or continue with text only.</p><button id="discarddraftfiles" type="button">Continue without attachments</button></div>
+      <div class="actions"><button id="captureability" class="primary" type="button" disabled>Feed Toad</button><button id="clearfeed" type="button">Clear input</button><button id="downloaddraft" type="button">Download draft</button></div>
       <p id="abilitymessage" role="status" aria-live="polite" tabindex="-1"></p>
       <details><summary>Add a name, description, source, or files</summary>
         <label for="abilityname">Name (optional)</label><input id="abilityname" placeholder="Toad will suggest a name" maxlength="100">
@@ -31,6 +34,8 @@
         <label for="abilitysource">Source (optional)</label><input id="abilitysource" placeholder="ChatGPT / Gemini / my notes" maxlength="200">
         <label for="sourcefiles">Text and source files (up to 40)</label><input id="sourcefiles" type="file" multiple accept=".py,.js,.mjs,.html,.css,.json,.md,.txt,.toml,.ini,.cfg,.yaml,.yml">
         <p class="small">250 KB per file, 512 KB per package. Use the local Python engine for ZIP packages. Repository and documentation links are saved as references.</p>
+        <label for="importdraft">Restore a downloaded draft</label><input id="importdraft" type="file" accept=".json,application/json">
+        <p class="small">Restores unsent text and optional fields into this editor. Attachment contents are not included in drafts. Draft downloads are separate from inbox backups.</p>
       </details>
     </section>
     <section class="card" id="ability-library" aria-labelledby="librarytitle">

@@ -94,3 +94,17 @@ test('v2 backup can retain a large structured-package original within package li
   const lib=Catalog.normalizeLibrary({schema:'toad-library-v2',abilities:[a]});
   assert.equal(lib.abilities[0].content,content);
 });
+
+test('phone draft schema preserves text and metadata without creating an ability', () => {
+  const draft={schema:'toad-feed-draft-v1',content:'<img src=x onerror="window.evil=true">',name:'Sensor notes',description:'Check readings',source:'My phone',has_files:true,saved_at:'2026-10-20T17:00:00.000Z'};
+  assert.deepEqual(Catalog.normalizeDraft(draft),draft);
+  assert.equal(Object.hasOwn(draft,'installed'),false);
+});
+
+test('unreadable, future and oversized drafts are refused for explicit recovery', () => {
+  assert.equal(typeof Catalog.normalizeDraft,'function');
+  const draft={schema:'toad-feed-draft-v1',content:'text',name:'',description:'',source:'',has_files:false,saved_at:'2026-10-20T17:00:00.000Z'};
+  for(const changed of [{schema:'toad-feed-draft-v9'},{content:43},{has_files:'yes'},{content:'x'.repeat(250001)},{name:'x'.repeat(101)},{unknown:'do not discard'}]){
+    assert.throws(()=>Catalog.normalizeDraft({...draft,...changed}),/draft|limit|field/i);
+  }
+});
