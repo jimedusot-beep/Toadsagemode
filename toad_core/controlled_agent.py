@@ -33,7 +33,7 @@ def _json_bytes(data):
 class ControlledAgent:
     """An experimental secondary agent loop; existing MissionEngine remains default."""
 
-    def __init__(self, engine: Engine, identifier: str, *, model=None, worker=None):
+    def __init__(self, engine: Engine, identifier: str, *, candidate_id=None, model=None, worker=None):
         if not identifier or not all(c.isalnum() or c in "-_" for c in identifier) or len(identifier) > 64:
             raise ValueError("Invalid trajectory identifier")
         self.engine = engine
@@ -48,7 +48,7 @@ class ControlledAgent:
             if self.state.get("schema") != "toad-agent-trajectory-v1":
                 raise PackageError("Unsupported trajectory format")
         else:
-            self.state = {"schema": "toad-agent-trajectory-v1", "id": identifier, "status": "ready", "actions": [],
+            if not candidate_id:\n                raise ValueError("New agent trajectory requires an explicit candidate ID")\n            engine.get(candidate_id)\n            self.state = {"schema": "toad-agent-trajectory-v1", "id": identifier, "status": "ready", "actions": [],\n                          "allowed_candidates": [candidate_id],
                           "model_calls": 0, "started_at": time.time(), "pending": None}
             self._save()
 
@@ -137,7 +137,7 @@ class ControlledAgent:
                              "Candidate ID is required except for finish.",
                              "Existing tests, permissions, dependencies and protected core cannot be modified.",
                              "Observe results before proposing another action; finish if blocked."],
-            "observations": self.state["actions"][-5:],
+            "allowed_candidate_ids": self.state.get("allowed_candidates", []),\n            "observations": self.state["actions"][-5:],
         }, ensure_ascii=False)
         return self.model.generate_json(prompt, purpose="bounded candidate actions")
 
