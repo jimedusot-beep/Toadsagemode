@@ -102,7 +102,9 @@ class ControlledAgent:
                 if revision["unchanged"]:
                     return {"unchanged": True, "candidate_id": identifier}
                 proposed = json.loads(json.dumps(original))
-                proposed["files"] = draft.snapshot()
+                contents = {file["path"]: file["content"] for file in draft.snapshot()}
+                for file in proposed["files"]:
+                    file["content"] = contents[file["path"]]
             finally:
                 draft.close()
             validated, changed = validate_repair(original, proposed)

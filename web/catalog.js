@@ -141,6 +141,15 @@
     const langs=[...new Set(manifest.files.map(f=>language(f.path)))];
     return {id:uid(),name:manifest.name,description:options.description || manifest.description,version:manifest.version,source:options.source || 'manual paste',created_at:timestamp,updated_at:timestamp,language:langs.length===1?langs[0]:'Mixed',content:original,manifest,dependencies:manifest.dependencies,permissions:manifest.permissions,compatibility:manifest.compatibility,status:report.errors.length || report.warnings.length?'needs_review':'inspected',verification:'unverified',installed:false,validation_results:report,test_results:[],previous_versions:[],rollback:null,related_missions:[],history:[{event:'received',at:timestamp},{event:'inspected',at:timestamp}],extensions:{}};
   }
+  function equivalent(a,b) {
+    if(a===b)return true;
+    if(!a || !b || typeof a!=='object' || typeof b!=='object' || Array.isArray(a)!==Array.isArray(b))return false;
+    const keys=Object.keys(a);
+    return keys.length===Object.keys(b).length && keys.every(k=>Object.hasOwn(b,k) && equivalent(a[k],b[k]));
+  }
+  function importedFields(original,current,skip=[]) {
+    return Object.fromEntries(Object.entries(original).filter(([k,v])=>!skip.includes(k) && !equivalent(v,current[k])).map(([k,v])=>[k,clone(v)]));
+  }
   function normalizeLibrary(data, trustedLocal) {
     if (!data || !['toad-library-v1','toad-library-v2'].includes(data.schema) || !Array.isArray(data.abilities) || data.abilities.length>LIMITS.items) throw Error('Unsupported library format or item limit');
     if (bytes(JSON.stringify(data))>LIMITS.backup) throw Error('Library exceeds backup size limit');
@@ -155,7 +164,9 @@
       r.id=typeof a.id==='string' && /^[A-Za-z0-9_-]{1,100}$/.test(a.id)?a.id:r.id;
       if (ids.has(r.id)) throw Error('Duplicate ability identifier'); ids.add(r.id);
       r.created_at=typeof a.created_at==='string'?a.created_at:r.created_at;
-      r.extensions=trustedLocal?clone(a.extensions || {}):{original:clone(a)};
+      // Source content is already retained, and normalizeManifest preserves unknown
+      // manifest/file metadata. Keep differing claims/extras without copying payloads.
+      r.extensions=trustedLocal?clone(a.extensions || {}):{original:importedFields(a,r,['manifest'])};
       // Only on-device states this browser can actually produce survive a local reload.
       if (trustedLocal && ['received','inspected','needs_review','archived'].includes(a.status)) {r.status=a.status; r.history=Array.isArray(a.history)?clone(a.history):r.history;}
       if (!trustedLocal) {r.history.push({event:'backup_imported_unverified',at:now()}); if(a.status==='archived')r.status='archived';}
@@ -169,8 +180,29 @@
     const normalized=normalizeLibrary(incoming), library=clone(current), keys=new Set(library.abilities.map(identity));
     let added=0,duplicates=0;
     for (const r of normalized.abilities) {const key=identity(r); if(keys.has(key)){duplicates++;continue;} if(library.abilities.some(a=>a.id===r.id))r.id=uid();library.abilities.push(r);keys.add(key);added++;}
+    const metadata=importedFields(incoming,library,['abilities']);
+    if(Object.keys(metadata).length){
+      const extras=library.extensions || {};
+      if(typeof extras!=='object' || Array.isArray(extras))throw Error('Invalid library extensions; recover the stored data first');
+      if(!Object.values(extras).some(value=>equivalent(value,metadata))){
+        let key='imported_backup_metadata',suffix=2;
+        while(Object.hasOwn(extras,key))key='imported_backup_metadata_'+suffix++;
+        extras[key]=metadata;
+      }
+      library.extensions=extras;
+    }
     if(library.abilities.length>LIMITS.items || bytes(JSON.stringify(library))>LIMITS.backup)throw Error('Merged library exceeds storage limit');
     return {library,added,duplicates};
+  }
+  function editMetadata(record,name,description) {
+    if(typeof name!=='string' || !name.trim())throw Error('A name is required');
+    name=slug(name);if(!/^[a-z][a-z0-9_-]{1,63}$/.test(name))throw Error('Choose a name beginning with a letter');
+    if(typeof description!=='string' || description.length>4000)throw Error('Invalid description');
+    const edited=clone(record);
+    edited.manifest=normalizeManifest({...edited.manifest,name,description});
+    edited.name=name;edited.description=description;edited.updated_at=now();
+    edited.history.push({event:'metadata_edited',at:edited.updated_at});
+    return edited;
   }
   function normalizeDraft(data) {
     const keys=['schema','content','name','description','source','has_files','saved_at'];
@@ -181,5 +213,5 @@
     if(typeof data.has_files!=='boolean' || typeof data.saved_at!=='string' || data.saved_at.length>64 || !Number.isFinite(Date.parse(data.saved_at)))throw Error('Invalid draft metadata');
     return clone(data);
   }
-  return Object.freeze({LIMITS,STATUSES,bytes,uid,safePath,language,normalizeManifest,createCandidate,normalizeLibrary,mergeLibraries,identity,inspect,parseJSON,normalizeDraft});
+  return Object.freeze({LIMITS,STATUSES,bytes,uid,safePath,language,normalizeManifest,createCandidate,normalizeLibrary,mergeLibraries,identity,inspect,parseJSON,normalizeDraft,editMetadata});
 });

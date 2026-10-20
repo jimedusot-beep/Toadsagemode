@@ -7,7 +7,7 @@
   let expectedRaw=null, expectedLegacy=null;
   const DRAFT='toad-feed-draft-v1';
   let draftReadable=true, draftRaw=null, missingDraftFiles=false, draftTimer=null, draftRevision=0;
-  const selected=new Set();
+  const selected=new Set(), metadataDrafts=new Map();
   function notice(message,error){$('abilitymessage').textContent=message;$('abilitymessage').className=error?'error':'';}
   function element(tag,text,className){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(className)e.className=className;return e;}
   function download(data,name,type){const blob=new Blob([data],{type:type || 'application/json'}),url=URL.createObjectURL(blob),a=element('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);}
@@ -22,8 +22,8 @@
   function synchronize(){
     const raw=localStorage.getItem(KEY),legacy=raw===null?localStorage.getItem(LEGACY):null;
     if(raw===expectedRaw && legacy===expectedLegacy)return false;
-    if([...document.querySelectorAll('[data-metadata-field]')].some(e=>e.value!==e.defaultValue))throw Error('Inbox changed in another tab. Copy your unsaved name or description edits before reloading.');
-    try{readInbox();render();$('storagebanner').textContent='Inbox updated on this device. Export backups regularly.';$('storagebanner').className='';return true;}
+    if([...metadataDrafts].some(([id,draft])=>{const item=library.abilities.find(a=>a.id===id);return item && (draft.name!==item.name || draft.description!==item.description);}))throw Error('Inbox changed in another tab. Copy your unsaved name or description edits before reloading.');
+    try{metadataDrafts.clear();readInbox();render();$('storagebanner').textContent='Inbox updated on this device. Export backups regularly.';$('storagebanner').className='';return true;}
     catch(e){$('storagebanner').textContent='Changed inbox data is unreadable. Download raw recovery before resetting. '+e.message;$('storagebanner').className='error';$('backupcontrols').open=true;throw e;}
   }
   async function save(next){
@@ -93,11 +93,26 @@
       section.appendChild(element('p','Source: '+item.source+' · '+new Date(item.created_at).toLocaleString(),'small'));
       const actions=element('div',undefined,'actions');
       const archive=element('button',item.status==='archived'?'Restore':'Archive');archive.type='button';archive.onclick=async()=>{try{await update(item.id,a=>{a.status=a.status==='archived'?(a.validation_results.errors.length || a.validation_results.warnings.length?'needs_review':'inspected'):'archived';a.history.push({event:a.status==='archived'?'archived':'restored',at:new Date().toISOString()});});notice('Updated locally.');}catch(e){notice(e.message,true);}};
-      const del=element('button','Delete','danger');del.type='button';del.onclick=async()=>{if(!confirm('Delete '+item.name+' from this device? Export a backup first if you need it.'))return;try{const next={...library,abilities:library.abilities.filter(a=>a.id!==item.id)};await save(next);selected.delete(item.id);render();notice('Deleted local candidate.');}catch(e){notice(e.message,true);}};
+      const del=element('button','Delete','danger');del.type='button';del.onclick=async()=>{if(!confirm('Delete '+item.name+' from this device? Export a backup first if you need it.'))return;try{const next={...library,abilities:library.abilities.filter(a=>a.id!==item.id)};await save(next);selected.delete(item.id);metadataDrafts.delete(item.id);render();notice('Deleted local candidate.');}catch(e){notice(e.message,true);}};
       actions.append(archive,del);section.appendChild(actions);
       const edit=element('details');edit.appendChild(element('summary','Edit name and description'));
       const name=element('input');name.defaultValue=item.name;name.value=item.name;name.dataset.metadataField='name';name.maxLength=100;const desc=element('textarea');desc.defaultValue=item.description;desc.value=item.description;desc.dataset.metadataField='description';desc.rows=2;desc.maxLength=4000;
-      const nl=element('label','Name');nl.appendChild(name);const dl=element('label','Description');dl.appendChild(desc);const commit=element('button','Save changes');commit.type='button';commit.onclick=async()=>{try{if(!name.value.trim())throw Error('A name is required.');await update(item.id,a=>{const normalized=C.createCandidate(a.content,{name:name.value,description:desc.value,source:a.source});a.name=normalized.name;a.manifest.name=a.name;a.description=desc.value;a.manifest.description=desc.value;a.updated_at=new Date().toISOString();a.history.push({event:'metadata_edited',at:a.updated_at});});notice('Changes saved locally.');}catch(e){notice(e.message,true);}};edit.append(nl,dl,commit);section.appendChild(edit);
+      const pending=metadataDrafts.get(item.id);
+      if(pending){name.value=pending.name;desc.value=pending.description;edit.open=true;}
+      const remember=()=>metadataDrafts.set(item.id,{name:name.value,description:desc.value});
+      name.addEventListener('input',remember);desc.addEventListener('input',remember);
+      const nl=element('label','Name');nl.appendChild(name);const dl=element('label','Description');dl.appendChild(desc);
+      const commit=element('button','Save changes');commit.type='button';commit.onclick=async()=>{try{
+        const next=JSON.parse(JSON.stringify(library)),index=next.abilities.findIndex(a=>a.id===item.id);
+        const savedName=name.value,savedDescription=desc.value;
+        next.abilities[index]=C.editMetadata(next.abilities[index],savedName,savedDescription);
+        await save(next);
+        const latest=metadataDrafts.get(item.id);
+        if(latest && latest.name===savedName && latest.description===savedDescription)metadataDrafts.delete(item.id);
+        render();notice(metadataDrafts.has(item.id)?'Changes saved locally. Newer edits remain unsaved.':'Changes saved locally.');
+      }catch(e){notice(e.message,true);}};
+      const discard=element('button','Discard changes');discard.type='button';discard.onclick=()=>{metadataDrafts.delete(item.id);render();notice('Unsaved changes discarded for this candidate.');};
+      edit.append(nl,dl,commit,discard);section.appendChild(edit);
       const details=element('details');details.appendChild(element('summary','Inspection, files, and history'));
       details.appendChild(element('p','No code has been executed. Syntax checks in this browser cover JSON only. Python and other source need the local engine.','small'));
       const report=item.validation_results;
@@ -163,8 +178,8 @@
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden' && draftTimer!==null)persistDraft();});
   window.addEventListener('storage',e=>{try{if(e.storageArea===localStorage && (e.key===KEY || e.key===LEGACY || e.key===null))if(synchronize())notice('Inbox updated from another tab. Your draft has not changed.');}catch(e){notice('Inbox changed in another tab: '+e.message,true);}});
   for(const id of ['searchabilities','statusfilter','languagefilter'])$(id).addEventListener(id==='searchabilities'?'input':'change',render);
-  $('exportabilities').onclick=()=>{try{synchronize();if(!readable)throw Error('Use raw recovery for unreadable storage.');download(JSON.stringify(library,null,2),'toad-library.json');notice('Backup download prepared. Keep the file somewhere you can find it.');}catch(e){notice(e.message,true);}};
-  $('exportselected').onclick=()=>{try{synchronize();if(!readable)throw Error('Use raw recovery for unreadable storage.');const entries=library.abilities.filter(a=>selected.has(a.id));if(!entries.length){notice('Select at least one candidate first.',true);return;}download(JSON.stringify({...library,abilities:entries},null,2),'toad-library-selected.json');notice('Selected backup download prepared.');}catch(e){notice(e.message,true);}};
+  $('exportabilities').onclick=()=>{try{synchronize();if(!readable)throw Error('Use raw recovery for unreadable storage.');download(JSON.stringify(library),'toad-library.json');notice('Backup download prepared. Keep the file somewhere you can find it.');}catch(e){notice(e.message,true);}};
+  $('exportselected').onclick=()=>{try{synchronize();if(!readable)throw Error('Use raw recovery for unreadable storage.');const entries=library.abilities.filter(a=>selected.has(a.id));if(!entries.length){notice('Select at least one candidate first.',true);return;}download(JSON.stringify({...library,abilities:entries}),'toad-library-selected.json');notice('Selected backup download prepared.');}catch(e){notice(e.message,true);}};
   $('importabilities').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;if(f.size>C.LIMITS.backup)throw Error('Backup exceeds 2 MB limit.');const incoming=C.parseJSON(await f.text());const merged=C.mergeLibraries(library,incoming);await save(merged.library);render();notice('Imported '+merged.added+' candidates locally; '+merged.duplicates+' duplicates skipped. Imported claims remain unverified.');}catch(err){notice('Import refused: '+err.message,true);}finally{e.target.value='';}};
   $('recoverstorage').onclick=()=>{try{let raw=rawStored;if(raw===null)raw=localStorage.getItem(KEY) || localStorage.getItem(LEGACY);if(raw===null)throw Error('No stored data is available.');download(raw,'toad-storage-recovery.txt','text/plain');notice('Raw recovery download prepared.');}catch(e){notice('Recovery unavailable: '+e.message,true);}};
   $('resetstorage').onclick=()=>{if(readable){notice('Storage is readable. Use the individual delete controls.',true);return;}if(!confirm('Reset unreadable inbox data on this device? Download raw recovery first.'))return;try{localStorage.removeItem(KEY);localStorage.removeItem(LEGACY);location.reload();}catch(e){notice('Storage reset failed: '+e.message,true);}};
