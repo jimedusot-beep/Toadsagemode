@@ -4,7 +4,10 @@ const assert=require('node:assert/strict');
 const {devices}=require('playwright');
 const fs=require('node:fs');
 const KEY='toad-ability-library-v2', DRAFT='toad-feed-draft-v1';
-const feed=page=>page.getByRole('button',{name:'Feed Toad',exact:true}).click();
+const feed=async(page,pending=false)=>{
+  await page.getByRole('button',{name:'Feed Toad',exact:true}).click();
+  if(!pending)await page.waitForFunction(()=>!document.querySelector('#captureability').disabled);
+};
 const draftSaved=page=>page.waitForFunction(()=>/draft.*saved.*tab/i.test(document.querySelector('#draftstatus')?.textContent || ''));
 
 async function reloadDraft(browser,base){
@@ -152,7 +155,7 @@ async function newerDraft(browser,base){
     await page.fill('#feedinput','Original upload notes');
     await page.setInputFiles('#sourcefiles',{name:'sensor.py',mimeType:'text/plain',buffer:Buffer.from('print(1)\n')});
     await page.evaluate(()=>{const original=File.prototype.text;File.prototype.text=function(){return new Promise(resolve=>{window.releaseFile=()=>resolve(original.call(this));});};});
-    await feed(page);await page.waitForFunction(()=>typeof window.releaseFile==='function');
+    await feed(page,true);await page.waitForFunction(()=>typeof window.releaseFile==='function');
     await page.fill('#feedinput','New thought typed during save');await page.fill('#abilityname','next-draft');
     await page.evaluate(()=>window.releaseFile());
     await page.waitForFunction(()=>document.querySelector('#abilitymessage').textContent.includes('Newer edits'));
@@ -173,7 +176,7 @@ async function queuedWriter(browser,base){
     if(!await holder.evaluate(()=>Boolean(navigator.locks))){console.log('SKIP: Web Locks unavailable; fallback has separate coverage');return;}
     await holder.evaluate(()=>{navigator.locks.request('toad-inbox-write-v2',()=>new Promise(resolve=>{window.releaseLock=resolve;}));});
     await holder.waitForFunction(()=>typeof window.releaseLock==='function');
-    await writer.fill('#feedinput','Waiting writer draft');await feed(writer);
+    await writer.fill('#feedinput','Waiting writer draft');await feed(writer,true);
     await holder.evaluate(key=>localStorage.setItem(key,JSON.stringify({schema:'toad-library-v2',abilities:[ToadCatalog.createCandidate('Independent stored entry')]})),KEY);
     await writer.waitForFunction(()=>document.querySelectorAll('[data-ability-id]').length===1);
     await holder.evaluate(()=>window.releaseLock());
