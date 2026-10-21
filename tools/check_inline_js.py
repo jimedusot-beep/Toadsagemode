@@ -16,7 +16,9 @@ class Scripts(HTMLParser):
     def handle_endtag(self,tag):
         if tag=='script' and self.current is not None:self.scripts.append(self.current);self.current=None
 
-page=Scripts();page.feed((root/'index.html').read_text(encoding='utf-8'))
+page=Scripts()
+for name in ('index.html','empathy.html'):
+    page.feed((root/name).read_text(encoding='utf-8'))
 if not page.scripts:raise SystemExit('No page scripts found')
 with tempfile.TemporaryDirectory() as folder:
     for index,script in enumerate(page.scripts):

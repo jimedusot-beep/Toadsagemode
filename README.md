@@ -4,6 +4,20 @@ A local-first absorption inbox and Python development engine. Save ideas or sour
 
 [Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
 
+## Next demonstration: empathy and personality learning
+
+[Open the phone lesson library](https://jimedusot-beep.github.io/Toadsagemode/empathy.html)
+to save conversational notes, review/correct original examples, preview relevant
+reviewed lessons, and record paired human assessments. It needs no model or Acer.
+Private notes stay in this browser; export the separate empathy backup.
+
+The local engine adds `python -m toad_core empathy` commands for private SQLite
+lessons, legacy imports, reviewed retrieval and optional paired Ollama responses.
+Twenty original practice scenarios and ten separate held-out cases support
+evaluation. This is retrieval, not model training or proof of improved empathy.
+Show-inspired exercises are original fiction, not quotations or impersonation.
+See the [iPhone guide, CLI commands and evaluation protocol](docs/EMPATHY.md).
+
 
 ## Experimental private phone bridge and bounded agent
 

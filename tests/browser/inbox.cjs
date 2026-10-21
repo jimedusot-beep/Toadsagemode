@@ -20,6 +20,7 @@ const server=http.createServer((req,res)=>{
   try{
     const type=process.env.TOAD_BROWSER==='chromium'?chromium:webkit;
     browser=await type.launch({headless:true,...(process.env.TOAD_BROWSER_EXECUTABLE?{executablePath:process.env.TOAD_BROWSER_EXECUTABLE}:{})});
+    await require('./empathy.cjs')(browser,base);
     await require('./phone-flows.cjs')(browser,base);
     const context=await browser.newContext({...devices['iPhone 13'],acceptDownloads:true});
     const page=await context.newPage(), errors=[];
