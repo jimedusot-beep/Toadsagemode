@@ -196,6 +196,12 @@ class EmpathyLibrary:
         # Bound reference material independently from the catalog capacity.
         references = [{k: lesson[k] for k in ('id', 'version', 'audience', 'technique', 'helpful_behavior',
                        'counterexample', 'practice_response', 'inappropriate_when')} for lesson in lessons]
+        for reference, lesson in zip(references, lessons):
+            excerpt = lesson['material'].encode('utf-8')[:4000].decode('utf-8', errors='ignore')
+            reference.update({'title': lesson['title'], 'material_excerpt': excerpt,
+                              'material_truncated': excerpt != lesson['material'],
+                              'source': {key: lesson['source'][key][:200] for key in
+                                         ('label', 'kind', 'rights', 'attribution', 'inspiration')}})
         prompt = json.dumps({'policy': POLICY, 'audience': audience, 'untrusted_scenario': scenario,
                              'untrusted_lessons': references}, ensure_ascii=False)
         proposal = (model or OllamaAdapter()).generate_json(prompt, purpose='empathy response; text only, no tools')

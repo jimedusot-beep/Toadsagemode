@@ -105,6 +105,10 @@ python -m toad_core empathy evaluate --split heldout --id heldout-01 --output he
 Comparison makes two actual bounded calls through the configurable loopback-only
 Ollama adapter: baseline with no lessons, then the same scenario/policy with up to
 three relevant human-reviewed lessons. Reports identify exact lesson versions.
+References include the interpretation plus the first 4 KB of material and short
+source labels. Truncation is explicitly flagged in the model reference; the full
+stored material remains unchanged. This bounded excerpt may miss later context,
+so summarize long transcripts in the interpretation before reviewing them.
 No matches means the augmented arm has no reference lessons; it is not evidence
 that retrieval helped. Choose a local model suitable for conversation and the
 host's resources; the existing coding-model default may be poor at empathy.

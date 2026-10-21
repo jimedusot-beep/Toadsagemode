@@ -68,6 +68,7 @@ class EmpathyTests(unittest.TestCase):
         report = self.lib.compare('Puzzle frustration', audience='adult', model=model)
         self.assertEqual(len(model.prompts[0]['untrusted_lessons']), 0)
         self.assertEqual(len(model.prompts[1]['untrusted_lessons']), 1)
+        self.assertEqual(model.prompts[1]['untrusted_lessons'][0]['material_excerpt'], 'Frustration with puzzle')
         self.assertEqual(model.prompts[0]['policy'], model.prompts[1]['policy'])
         self.assertIsNone(report['improvement'])
         self.assertEqual(report['human_ratings'], [])
