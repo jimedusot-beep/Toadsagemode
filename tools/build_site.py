@@ -3,7 +3,8 @@ import argparse
 from pathlib import Path
 import shutil
 
-ASSETS=('index.html','web/catalog.js','web/ability-library.js','web/styles.css')
+ASSETS=('index.html','empathy.html','web/catalog.js','web/ability-library.js','web/styles.css',
+        'web/empathy.js','web/empathy-ui.js','empathy/examples.json','empathy/lessons.json','empathy/practice.json')
 
 
 def build(output):

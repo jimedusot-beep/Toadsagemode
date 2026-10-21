@@ -11,5 +11,6 @@ class SiteBuildTests(unittest.TestCase):
             out=Path(tmp)/'site'
             r=subprocess.run([sys.executable,str(root/'tools/build_site.py'),'--output',str(out)],cwd=root,capture_output=True,text=True)
             self.assertEqual(r.returncode,0,r.stderr)
-            self.assertEqual(sorted(p.relative_to(out).as_posix() for p in out.rglob('*') if p.is_file()),['index.html','web/ability-library.js','web/catalog.js','web/styles.css'])
+            self.assertEqual(sorted(p.relative_to(out).as_posix() for p in out.rglob('*') if p.is_file()),['empathy.html','empathy/examples.json','empathy/lessons.json','empathy/practice.json','index.html','web/ability-library.js','web/catalog.js','web/empathy-ui.js','web/empathy.js','web/styles.css'])
+            self.assertFalse((out/'empathy/heldout.json').exists())
             self.assertFalse((out/'toad_core').exists());self.assertFalse((out/'sage-toad-github-pages.zip').exists())

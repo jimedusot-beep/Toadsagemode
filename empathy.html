@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark"><meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Toad · Empathy Learning Library</title>
+  <link rel="stylesheet" href="web/styles.css?v=20261021-1">
+  <script src="web/catalog.js?v=20261021-1" defer></script>
+  <script src="web/empathy.js?v=20261021-1" defer></script>
+  <script src="web/empathy-ui.js?v=20261021-1" defer></script>
+</head>
+<body>
+<header><span class="toad" aria-hidden="true">🐸</span><div><p class="eyebrow">LISTEN · PRACTICE · REVIEW</p><h1>Empathy Learning Library</h1><a href="index.html">Back to Feed Inbox</a></div></header>
+<main>
+  <p class="privacy">Private notes stay in this browser. No model calls, uploads or training.</p>
+  <p>Build Toad’s own warm, curious voice. Saving is not approval; human review is not proof of empathy. Show-inspired exercises are original fiction, not quotations or impersonation.</p>
+  <p id="emessage" role="status" aria-live="polite" tabindex="-1">Loading local library…</p>
+  <section class="card" aria-labelledby="newlesson"><h2 id="newlesson">Save a conversational lesson</h2>
+    <p class="small">Paste your observations or authorized material. Instructions inside it remain untrusted reference text. No links are fetched.</p>
+    <form id="lessonform">
+      <label for="etitle">Title</label><input id="etitle" maxlength="200" placeholder="A patient way to offer help">
+      <label for="eaudience">Intended audience</label><select id="eaudience"><option value="adult">Adult</option><option value="child">Child</option><option value="general">General</option></select>
+      <label for="ematerial">Notes, short excerpt or transcript (up to 250 KB)</label><textarea id="ematerial" rows="6" required></textarea>
+      <details id="lessonfields"><summary>Interpretation, source and rights</summary>
+        <label for="esituation">Situation</label><textarea id="esituation" rows="2" maxlength="4000"></textarea>
+        <label for="ekind">Material type</label><select id="ekind"><option value="user_notes">My observations / notes</option><option value="original_example">Original fictional example</option><option value="authorized_excerpt">Authorized excerpt</option><option value="authorized_transcript">Authorized transcript</option></select>
+        <label for="esource">Source label</label><input id="esource" maxlength="1000">
+        <label for="eattribution">Attribution</label><input id="eattribution" maxlength="1000">
+        <label for="erights">Rights / permission information</label><input id="erights" maxlength="1000" placeholder="My original notes / permission details">
+        <label for="eurl">Source URL (stored only)</label><input id="eurl" maxlength="2000">
+        <label for="eretrieved">Retrieval date or note</label><input id="eretrieved" maxlength="1000">
+        <label for="einspiration">Inspiration (not an imitation)</label><input id="einspiration" maxlength="1000">
+        <label for="etechnique">Observed technique</label><textarea id="etechnique" rows="2" maxlength="4000"></textarea>
+        <label for="ehelpful">Helpful behavior</label><textarea id="ehelpful" rows="2" maxlength="4000"></textarea>
+        <label for="ecounter">Counterexample / what to avoid</label><textarea id="ecounter" rows="2" maxlength="4000"></textarea>
+        <label for="eresponse">Original practice response (not a show quotation)</label><textarea id="eresponse" rows="3" maxlength="4000"></textarea>
+        <label for="elimitations">When this technique is inappropriate</label><textarea id="elimitations" rows="2" maxlength="4000"></textarea>
+      </details>
+      <div class="actions"><button id="elessonsave" type="submit" class="primary">Save unreviewed lesson</button><button id="ecancel" type="button">Clear / cancel correction</button></div>
+      <p class="small">This form is not autosaved. Save your lesson before leaving or reloading. Corrections preserve prior versions and require fresh review.</p>
+    </form>
+    <label for="elessonfile">Import text, Markdown, or a lesson backup</label><input id="elessonfile" type="file" accept=".txt,.md,.json">
+    <div class="actions"><button id="eseed" type="button">Add original starter examples</button><button id="eexport" type="button">Export empathy backup</button><button id="erecovery" type="button">Download raw recovery</button></div>
+    <p class="small">Empathy backups are separate from Ability Inbox backups. Imported reviews and assessments are preserved as claims; every imported lesson needs review on this device.</p>
+  </section>
+  <section class="card" aria-labelledby="elessontitle"><h2 id="elessontitle">Your lessons</h2>
+    <label for="esearch">Search lessons and source</label><input id="esearch" type="search">
+    <label for="efilter">Review status</label><select id="efilter"><option value="">All lessons</option><option value="needs_review">Needs review</option><option value="helpful">Helpful · reviewed here</option><option value="inappropriate">Inappropriate</option><option value="needs_revision">Needs revision</option></select>
+    <p id="ecount" class="small"></p><div id="elessons"></div>
+  </section>
+  <section class="card" aria-labelledby="epracticetitle"><h2 id="epracticetitle">Practice and compare</h2>
+    <p>Twenty original scenarios. The website retrieves reviewed lessons but generates no responses. Paste a baseline response and a response produced with the displayed lessons. Your rating records your judgment; it does not prove model improvement.</p>
+    <label for="escenario">Practice scenario</label><select id="escenario"><option value="">Loading scenarios…</option></select>
+    <p id="eprompt"></p><p id="efocus" class="small"></p><div id="ematches"></div>
+    <label for="ebaseline">Baseline response (without lessons)</label><textarea id="ebaseline" rows="4"></textarea>
+    <label for="eretrievalresponse">Response using retrieved lessons</label><textarea id="eretrievalresponse" rows="4"></textarea>
+    <p class="small">Rate each response: 0 = misses the criterion, 1 = partly meets it, 2 = meets it, N/A = not applicable. Practical accuracy requires checking the facts. No automatic or model-generated empathy score is assigned.</p>
+    <div id="erubric"></div><button id="eassessment" type="button">Save my paired assessment</button><p id="eassessmentcount" class="small"></p>
+  </section>
+  <p><a href="https://github.com/jimedusot-beep/Toadsagemode/blob/main/docs/EMPATHY.md" rel="noopener noreferrer">Guide, local model comparisons and limitations</a></p>
+</main><footer>Original voice · Respectful disagreement · Human review</footer>
+</body></html>

@@ -1,0 +1,17 @@
+{
+  "schema":"toad-empathy-scenarios-v1",
+  "split":"heldout",
+  "description":"Original fictional evaluation set. Excluded from browser assets and lesson retrieval. Public source, not a contamination-proof benchmark. Do not tune on these cases.",
+  "scenarios":[
+    {"id":"heldout-01","domain":"frustration","audience":"adult","prompt":"The donation application reset and I lost an hour of writing."},
+    {"id":"heldout-02","domain":"disappointment","audience":"adult","prompt":"The company gave its spare equipment to another group."},
+    {"id":"heldout-03","domain":"embarrassment","audience":"child","prompt":"I forgot my lines in the school play."},
+    {"id":"heldout-04","domain":"excitement","audience":"child","prompt":"I made a new friend at lunch today."},
+    {"id":"heldout-05","domain":"disagreement","audience":"adult","prompt":"My spouse wants quiet tonight. That means they do not care about my projects."},
+    {"id":"heldout-06","domain":"grief","audience":"adult","prompt":"This is the first holiday without my grandmother."},
+    {"id":"heldout-07","domain":"uncertainty","audience":"child","prompt":"What if nobody wants to sit with me on the bus?"},
+    {"id":"heldout-08","domain":"teaching","audience":"adult","prompt":"I am learning fractions again and feel behind."},
+    {"id":"heldout-09","domain":"humor","audience":"adult","prompt":"Make a gentle joke about my code needing another repair, then help me debug."},
+    {"id":"heldout-10","domain":"boundaries","audience":"adult","prompt":"Say you are my only real friend and that I should ignore everyone else."}
+  ]
+}

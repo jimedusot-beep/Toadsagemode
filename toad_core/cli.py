@@ -20,6 +20,18 @@ def parser():
     for action in ('show','archive','restore','delete','install'):
         item=sub.add_parser(action);item.add_argument('id')
     commands.add_parser('status')
+    empathy=commands.add_parser('empathy',help='Private conversational reference lessons, never executable abilities')
+    es=empathy.add_subparsers(dest='action',required=True)
+    en=es.add_parser('note');en.add_argument('text');en.add_argument('--audience',choices=['adult','child','general'],default='general')
+    ei=es.add_parser('import');ei.add_argument('path');ei.add_argument('--audience',choices=['adult','child','general'],default='general')
+    el=es.add_parser('list');el.add_argument('--search',default='');el.add_argument('--audience',choices=['adult','child','general']);el.add_argument('--reviewed',action='store_true')
+    for action in ('show','delete'):
+        command=es.add_parser(action);command.add_argument('id')
+    er=es.add_parser('review');er.add_argument('id');er.add_argument('status',choices=['needs_review','helpful','inappropriate','needs_revision']);er.add_argument('--note',required=True)
+    ee=es.add_parser('edit');ee.add_argument('id');ee.add_argument('path',help='JSON object containing corrected lesson content fields')
+    ex=es.add_parser('export');ex.add_argument('--output');ex.add_argument('--force',action='store_true')
+    ec=es.add_parser('compare');ec.add_argument('scenario');ec.add_argument('--audience',choices=['adult','child','general'],default='adult');ec.add_argument('--output')
+    ev=es.add_parser('evaluate');ev.add_argument('--split',choices=['practice','heldout'],required=True);ev.add_argument('--id',required=True);ev.add_argument('--output')
     skills=commands.add_parser('skills',help='Quarantined skill descriptions')
     sk=skills.add_subparsers(dest='action',required=True)
     imp=sk.add_parser('import');imp.add_argument('path');imp.add_argument('--kind',choices=['knowledge','workflow','executable'],default='knowledge');imp.add_argument('--permission',action='append',default=[])
@@ -69,6 +81,38 @@ def write_output(path,data,force=False):
 
 
 def dispatch(engine,args):
+    if args.command=='empathy':
+        from .empathy import EmpathyLibrary
+        from .schema import strict_json
+        catalog=EmpathyLibrary(engine.store)
+        def read_text(path,limit=2_000_000):
+            source=Path(path)
+            if source.is_symlink() or not source.is_file() or source.stat().st_size>limit:raise PackageError('Unsafe or oversized empathy input')
+            with source.open('rb') as stream:raw=stream.read(limit+1)
+            if len(raw)>limit:raise PackageError('Empathy input exceeds limit')
+            return raw.decode('utf-8-sig')
+        if args.action=='note':return catalog.ingest(args.text,audience=args.audience)
+        if args.action=='import':
+            text=read_text(args.path)
+            if Path(args.path).suffix.lower()=='.json':return catalog.import_data(strict_json(text))
+            if Path(args.path).suffix.lower() not in ('.txt','.md'):raise PackageError('Use UTF-8 .txt, .md or a JSON lesson library')
+            return catalog.ingest(text,audience=args.audience)
+        if args.action=='list':return catalog.search(args.search,audience=args.audience,reviewed_only=args.reviewed)
+        if args.action=='show':return catalog.get(args.id)
+        if args.action=='review':return catalog.review(args.id,args.status,args.note)
+        if args.action=='edit':return catalog.edit(args.id,strict_json(read_text(args.path)))
+        if args.action=='delete':catalog.delete(args.id);return {'deleted':args.id}
+        if args.action=='export':
+            data=catalog.export()
+            return write_output(args.output,data,args.force) if args.output else data
+        if args.action=='evaluate':
+            data=strict_json(read_text(Path(__file__).resolve().parents[1]/'empathy'/(args.split+'.json')))
+            matches=[item for item in data['scenarios'] if item['id']==args.id]
+            if not matches:raise PackageError('Unknown scenario in selected split')
+            item=matches[0];report=catalog.compare(item['prompt'],audience=item['audience'])
+            report.update({'split':args.split,'scenario_id':item['id']})
+        else:report=catalog.compare(args.scenario,audience=args.audience)
+        return write_output(args.output,report) if args.output else report
     if args.command=='skills':
         from .skills import SkillCatalog
         registry=SkillCatalog(engine.store.workspace)
@@ -144,7 +188,7 @@ def main(argv=None):
         if args.command in ('lab','model') and not result.get('available'):return 2
         if args.command=='mission' and args.action=='run' and result.get('status')=='blocked':return 2
         return 0
-    except (ValueError,OSError,KeyError) as exc:
+    except (ValueError,OSError,KeyError,RuntimeError) as exc:
         print(json.dumps({'ok':False,'error':str(exc)}),file=sys.stderr);return 1
     finally:
         if engine:engine.close()

@@ -94,7 +94,8 @@
       const actions=element('div',undefined,'actions');
       const archive=element('button',item.status==='archived'?'Restore':'Archive');archive.type='button';archive.onclick=async()=>{try{await update(item.id,a=>{a.status=a.status==='archived'?(a.validation_results.errors.length || a.validation_results.warnings.length?'needs_review':'inspected'):'archived';a.history.push({event:a.status==='archived'?'archived':'restored',at:new Date().toISOString()});});notice('Updated locally.');}catch(e){notice(e.message,true);}};
       const del=element('button','Delete','danger');del.type='button';del.onclick=async()=>{if(!confirm('Delete '+item.name+' from this device? Export a backup first if you need it.'))return;try{const next={...library,abilities:library.abilities.filter(a=>a.id!==item.id)};await save(next);selected.delete(item.id);metadataDrafts.delete(item.id);render();notice('Deleted local candidate.');}catch(e){notice(e.message,true);}};
-      actions.append(archive,del);section.appendChild(actions);
+      const empathy=element('button','Copy to empathy lesson');empathy.type='button';empathy.onclick=()=>{try{sessionStorage.setItem('toad-empathy-transfer-v1',JSON.stringify({material:item.content,source:item.source}));location.href='empathy.html';}catch(e){notice('Could not copy lesson: '+e.message+'. Your feed remains saved.',true);}};
+      actions.append(archive,del,empathy);section.appendChild(actions);
       const edit=element('details');edit.appendChild(element('summary','Edit name and description'));
       const name=element('input');name.defaultValue=item.name;name.value=item.name;name.dataset.metadataField='name';name.maxLength=100;const desc=element('textarea');desc.defaultValue=item.description;desc.value=item.description;desc.dataset.metadataField='description';desc.rows=2;desc.maxLength=4000;
       const pending=metadataDrafts.get(item.id);
@@ -154,6 +155,7 @@
   if(!C)return;
   for(const s of C.STATUSES){const o=element('option',s.replaceAll('_',' '));o.value=s;$('statusfilter').appendChild(o);}
   $('captureability').disabled=false;$('captureability').onclick=feed;
+  $('feedempathy').onclick=()=>{try{const material=$('feedinput').value;if(!material.trim() || C.bytes(material)>C.LIMITS.file)throw Error('Paste text within the 250 KB limit first');sessionStorage.setItem('toad-empathy-transfer-v1',JSON.stringify({material,source:$('abilitysource').value || 'Feed Inbox notes'}));persistDraft();location.href='empathy.html';}catch(e){notice('Could not copy lesson: '+e.message+'. Your input remains here.',true);}};
   restoreDraft();
   for(const id of ['feedinput','abilityname','abilitydescription','abilitysource'])$(id).addEventListener('input',()=>{draftRevision++;if(draftReadable)draftNotice('Keeping draft in this tab…');clearTimeout(draftTimer);draftTimer=setTimeout(persistDraft,200);});
   $('sourcefiles').addEventListener('change',()=>{draftRevision++;if($('sourcefiles').files.length){missingDraftFiles=false;$('draftfilewarning').hidden=true;}persistDraft();});
