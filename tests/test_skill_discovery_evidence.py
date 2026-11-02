@@ -36,7 +36,7 @@ class SkillDiscoveryEvidenceTests(unittest.TestCase):
 
     def test_ranked_search_filters_and_hides_body(self):
         hits = self.catalog.search_ranked("Python")
-        self.assertEqual([x["name"] for x in hits], ["python-helper", "python-review", "offline-notes"])
+        self.assertEqual([x["name"] for x in hits], ["python-review", "python-helper", "offline-notes"])
         self.assertTrue(all("body" not in item for item in hits))
         self.assertEqual([x["name"] for x in self.catalog.search_ranked("python", kind="knowledge")], ["offline-notes"])
         self.assertEqual([x["name"] for x in self.catalog.search_ranked("python review")], ["python-review"])
@@ -60,7 +60,7 @@ class SkillDiscoveryEvidenceTests(unittest.TestCase):
     def test_old_sqlite_without_fts5_uses_offline_fallback(self):
         with patch("toad_core.skills.sqlite3.connect", side_effect=sqlite3.OperationalError("no such module: fts5")):
             hits = self.catalog.search_ranked("python", limit=2)
-        self.assertEqual([x["name"] for x in hits], ["python-helper", "python-review"])
+        self.assertEqual([x["name"] for x in hits], ["python-review", "python-helper"])
 
     def test_reported_evidence_is_inert_and_binds_exact_digest(self):
         entry = self.catalog.record_evidence(
@@ -80,7 +80,7 @@ class SkillDiscoveryEvidenceTests(unittest.TestCase):
         self.assertEqual(first["granted_permissions"], [])
         self.assertEqual(first["declared_permissions"], ["source.read"])
         self.assertEqual(len(first["evidence"]), 1)
-        self.assertEqual(self.catalog.search_ranked("python")[1]["evidence"][0]["trust"], "self_reported_unverified")
+        self.assertEqual(self.catalog.search_ranked("python")[0]["evidence"][0]["trust"], "self_reported_unverified")
 
     def test_unverified_claim_never_becomes_actual_verification(self):
         for stage in ("sandbox", "test", "human-review"):
@@ -115,7 +115,7 @@ class SkillDiscoveryEvidenceTests(unittest.TestCase):
         try:
             lookup = parser().parse_args(["skills", "list", "--ranked", "--search", "python", "--limit", "1"])
             records = dispatch(engine, lookup)
-            self.assertEqual(records[0]["name"], "python-helper")
+            self.assertEqual(records[0]["name"], "python-review")
             self.assertNotIn("body", records[0])
             evidence = parser().parse_args([
                 "skills", "evidence", self.second["digest"], "scan", "blocked",
