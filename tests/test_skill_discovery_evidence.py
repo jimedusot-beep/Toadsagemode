@@ -47,7 +47,7 @@ class SkillDiscoveryEvidenceTests(unittest.TestCase):
     def test_untrusted_fts_syntax_does_not_become_query_operators(self):
         # Quotes/operators/punctuation never become raw FTS5 expressions.
         self.assertEqual(self.catalog.search_ranked('"python" OR malicious'), [])
-        self.assertEqual([x["name"] for x in self.catalog.search_ranked("python")][:1], ["python-helper"])
+        self.assertEqual([x["name"] for x in self.catalog.search_ranked("python")][:1], ["python-review"])
         for query in ("***", "a" * 65, "one two three four five six seven eight nine ten eleven twelve thirteen"):
             with self.subTest(query=query):
                 with self.assertRaises(ValueError):
