@@ -15,33 +15,108 @@ KINDS = ("knowledge", "workflow", "executable")
 SKILL_MAX = 120_000
 
 
+_FRONTMATTER_FIELDS = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
+_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
+_META_KEY = re.compile(r"[A-Za-z][A-Za-z0-9_.-]{0,63}\Z")
+
+
+def _plain_metadata_string(raw):
+    """Parse a deliberately bounded YAML string subset; never construct objects."""
+    if not raw or "\t" in raw or "\r" in raw:
+        raise ValueError("Invalid skill metadata scalar")
+    if raw.startswith('"'):
+        try:
+            value = json.loads(raw)
+        except (ValueError, TypeError) as exc:
+            raise ValueError("Invalid double-quoted skill metadata") from exc
+        if not isinstance(value, str):
+            raise ValueError("Skill metadata must be a string")
+    elif raw.startswith("'"):
+        if len(raw) < 2 or not raw.endswith("'"):
+            raise ValueError("Invalid single-quoted skill metadata")
+        inner = raw[1:-1]
+        if "'" in inner.replace("''", ""):
+            raise ValueError("Invalid single-quoted skill metadata")
+        value = inner.replace("''", "'")
+    else:
+        # Complex YAML values, tags, anchors, aliases and block scalars require
+        # a separate, audited parser. Never guess their meaning.
+        if raw.startswith(("!", "&", "*", "{", "[", "|", ">")) or ": " in raw or re.search(r"\s+#", raw):
+            raise ValueError("Use a quoted string for complex YAML metadata")
+        value = raw.strip()
+    if not value.strip() or "\x00" in value or any(ord(c) < 32 and c not in "\t\n" for c in value):
+        raise ValueError("Empty or control-character skill metadata")
+    return value
+
+
 def parse_skill(text):
+    """Validate the nonexecuting, flat-string Agent Skills frontmatter subset.
+
+    This is NOT a general YAML parser, a script loader, or a grant of tools.
+    Folded/multiline YAML and resource folders are intentionally unsupported.
+    """
     if not isinstance(text, str) or len(text.encode("utf-8")) > SKILL_MAX:
         raise ValueError("SKILL.md must be UTF-8 text within 120 KB")
-    # Deliberately a small subset of YAML, not an unsafe YAML interpreter.
     if not text.startswith("---\n"):
         raise ValueError("SKILL.md requires frontmatter")
     end = text.find("\n---\n", 4)
     if end == -1 or end > 4096:
         raise ValueError("SKILL.md frontmatter is malformed or oversized")
-    fields = {}
+    fields, metadata, parent = {}, {}, None
     for line in text[4:end].splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
+        if not line.strip() or line.startswith("#"):
             continue
-        if not re.fullmatch(r"[a-z_]+: [^\r\n]+", line):
-            raise ValueError("Only flat string metadata is supported")
-        key, value = line.split(": ", 1)
+        if line.startswith("  "):
+            if parent != "metadata":
+                raise ValueError("Unexpected nested skill metadata")
+            match = re.fullmatch(r"  ([A-Za-z][A-Za-z0-9_.-]{0,63}): (.+)", line)
+            if not match:
+                raise ValueError("Only flat string metadata entries are supported")
+            key, raw = match.groups()
+            if key in metadata:
+                raise ValueError("Duplicate nested metadata key")
+            if len(metadata) >= 32:
+                raise ValueError("Too many metadata keys")
+            value = _plain_metadata_string(raw)
+            if len(value) > 500:
+                raise ValueError("Nested metadata value too long")
+            metadata[key] = value
+            continue
+        if line[:1].isspace() or "\t" in line:
+            raise ValueError("Invalid YAML indentation in skill metadata")
+        match = re.fullmatch(r"([a-z][a-z-]*):(?: (.*))?", line)
+        if not match:
+            raise ValueError("Only bounded string frontmatter is supported")
+        key, raw = match.groups()
+        if key not in _FRONTMATTER_FIELDS:
+            raise ValueError("Unsupported frontmatter field: " + key)
         if key in fields:
             raise ValueError("Duplicate metadata field")
-        if len(value) > 500:
-            raise ValueError("Metadata too long")
-        fields[key] = value.strip().strip('"')
+        if key == "metadata":
+            if raw is not None:
+                raise ValueError("Metadata must use indented string entries")
+            fields[key] = True
+            parent = "metadata"
+            continue
+        if raw is None:
+            raise ValueError("Missing skill metadata string")
+        fields[key] = _plain_metadata_string(raw)
+        parent = None
     name, description = fields.get("name"), fields.get("description")
-    if not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9-]{1,63}", name or ""):
-        raise ValueError("Invalid skill name")
-    if not isinstance(description, str) or not description.strip():
-        raise ValueError("Skill needs a description")
-    return {"name": name, "description": description, "body": text[end + 5:]}
+    if not name or len(name) > 64 or not _NAME.fullmatch(name):
+        raise ValueError("Invalid Agent Skills name")
+    if not description or len(description) > 1024:
+        raise ValueError("Skill description must be 1–1024 characters")
+    for key, maximum in (("license", 256), ("compatibility", 500), ("allowed-tools", 500)):
+        if key in fields and len(fields[key]) > maximum:
+            raise ValueError(key + " metadata too long")
+    return {
+        "name": name, "description": description, "body": text[end + 5:],
+        "license": fields.get("license", ""),
+        "source_compatibility": fields.get("compatibility", ""),
+        "metadata": metadata,
+        "declared_allowed_tools": fields.get("allowed-tools", ""),
+    }
 
 
 class SkillCatalog:
@@ -79,6 +154,9 @@ class SkillCatalog:
         item = {"schema": "toad-skill-v1", "name": parsed["name"], "description": parsed["description"],
                 "kind": kind, "digest": digest, "body": parsed["body"],
                 "declared_permissions": permissions, "granted_permissions": [], "compatibility": compatibility,
+                "source_metadata": {"license": parsed["license"], "compatibility": parsed["source_compatibility"],
+                                    "metadata": parsed["metadata"], "allowed-tools": parsed["declared_allowed_tools"]},
+                "validation": "agent-skills-string-frontmatter-subset-v1",
                 "status": "quarantined", "executed": False, "installed": False}
         data["skills"].append(item)
         self._write(data)
