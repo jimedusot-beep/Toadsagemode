@@ -36,6 +36,10 @@ def parser():
     sk=skills.add_subparsers(dest='action',required=True)
     imp=sk.add_parser('import');imp.add_argument('path');imp.add_argument('--kind',choices=['knowledge','workflow','executable'],default='knowledge');imp.add_argument('--permission',action='append',default=[])
     ls=sk.add_parser('list');ls.add_argument('--search',default='');ls.add_argument('--kind',choices=['knowledge','workflow','executable'])
+    ls.add_argument('--ranked',action='store_true',help='Use offline FTS5 ranking (fallback supported)');ls.add_argument('--limit',type=int,default=25)
+    evidence=sk.add_parser('evidence',help='Record unverified local scan/test observations; never approve or run code')
+    evidence.add_argument('digest');evidence.add_argument('stage',choices=['scan','sandbox','test','human-review']);evidence.add_argument('outcome',choices=['passed','failed','blocked','not-run'])
+    evidence.add_argument('--note',required=True);evidence.add_argument('--report-sha256')
     agent=commands.add_parser('agent',help='Experimental bounded candidate agent')
     ast=agent.add_subparsers(dest='action',required=True)
     ar=ast.add_parser('run');ar.add_argument('id');ar.add_argument('--candidate-id',required=True);ar.add_argument('--goal',required=True)
@@ -116,7 +120,10 @@ def dispatch(engine,args):
     if args.command=='skills':
         from .skills import SkillCatalog
         registry=SkillCatalog(engine.store.workspace)
-        if args.action=='list':return registry.search(args.search,kind=args.kind)
+        if args.action=='list':
+            return registry.search_ranked(args.search,kind=args.kind,limit=args.limit) if args.ranked else registry.search(args.search,kind=args.kind)
+        if args.action=='evidence':
+            return registry.record_evidence(args.digest,args.stage,args.outcome,args.note,report_sha256=args.report_sha256)
         source=Path(args.path)
         if source.is_symlink() or source.stat().st_size>120000:raise PackageError('Unsafe/oversized skill input')
         return registry.register(source.read_text(encoding='utf-8'),kind=args.kind,permissions=args.permission,compatibility={})
