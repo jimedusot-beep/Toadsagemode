@@ -48,3 +48,28 @@ jobs:
         run: npx playwright install --with-deps webkit
       - name: Exercise iPhone-sized inbox, storage failure and backup paths
         run: npm run test:browser
+
+  merge_gate:
+    name: merge-gate
+    # A real terminal check: never allow skipped or failed test jobs to pass.
+    # Stable name on pull requests for branch-ruleset required checks.
+    if: ${{ always() }}
+    needs: [python, browser]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Require Python matrix and Mobile WebKit to pass
+        env:
+          PYTHON_RESULT: ${{ needs.python.result }}
+          WEBKIT_RESULT: ${{ needs.browser.result }}
+        shell: bash
+        run: |
+          echo "Python matrix: $PYTHON_RESULT"
+          echo "Mobile WebKit: $WEBKIT_RESULT"
+          if [[ "$PYTHON_RESULT" != "success" || "$WEBKIT_RESULT" != "success" ]]; then
+            echo "::error::Required validation was skipped, cancelled, or failed"
+            exit 1
+          fi
+          echo "All mandatory validation jobs passed."
