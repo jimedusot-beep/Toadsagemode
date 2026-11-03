@@ -30,7 +30,11 @@ mission status; it intentionally provides **no remote execution command**.
 Read [Private Bridge and security setup](docs/PRIVATE-BRIDGE.md).
 
 Experimental local-only modules now include a bounded per-candidate agent,
-disposable Git edits/diffs, and quarantined SKILL.md metadata:
+disposable Git edits/diffs, and quarantined SKILL.md metadata.
+The skill importer validates a bounded Agent Skills frontmatter subset without
+executing submitted instructions or granting requested tools. See the
+[skill-library review policy](docs/SKILL_LIBRARY.md).
+
 
 ```sh
 python -m toad_core skills import MY_SKILL.md --kind knowledge
