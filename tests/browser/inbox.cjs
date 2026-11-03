@@ -46,6 +46,9 @@ const server=http.createServer((req,res)=>{
     assert.equal(await page.locator('[data-ability-id]').count(),1);
     await page.fill('#searchabilities','');
     await page.locator('[data-ability-id]').first().getByRole('button',{name:'Archive',exact:true}).click();
+    // Archiving persists asynchronously; assert the eventual exact visible
+    // count rather than racing the in-flight render after the click.
+    await page.waitForFunction(()=>document.querySelectorAll('[data-ability-id]').length===1);
     assert.equal(await page.locator('[data-ability-id]').count(),1);
     await page.selectOption('#statusfilter','archived');
     assert.equal(await page.locator('[data-ability-id]').count(),1);

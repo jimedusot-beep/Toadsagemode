@@ -30,3 +30,49 @@ The importer now validates a deliberately conservative **string-only subset** of
 4. Exercise the real Docker isolation checks on a configured local host before any claims of safe execution.
 
 Do not automatically merge imported instructions into the protected core.
+
+## Offline discovery and reported evidence
+
+The existing JSON skill catalog remains the canonical local store. The optional `--ranked`
+search creates a temporary SQLite **FTS5 index entirely in memory** from that local
+catalog, uses quoted search terms, and discards the index after returning ranked
+metadata-only results. No downloads, hosted embeddings, persistent copy of source,
+plugins, or model inference are needed. If the Python SQLite build lacks FTS5,
+a bounded local substring fallback is used.
+
+```sh
+# Return top-five matching records without the original instruction bodies.
+python -m toad_core skills list --ranked --search "python debugging" --limit 5
+python -m toad_core skills list --ranked --search "offline" --kind knowledge
+```
+
+The original `skills list --search` remains unchanged for backward compatibility.
+The current catalog still limits import to 100 skills; FTS5 is **not** a claim of
+production-scale search performance. Queries are limited and escaped as text.
+
+For documentation of what a human actually attempted, an append-only,
+bounded **self-reported evidence** log is available. Find a skill's full
+64-character digest using `skills list`:
+
+```sh
+python -m toad_core skills evidence FULL_SKILL_SHA256 scan passed --note "Manual offline scan, no detected findings"
+python -m toad_core skills evidence FULL_SKILL_SHA256 sandbox blocked --note "No validated local Docker worker"
+python -m toad_core skills evidence FULL_SKILL_SHA256 test not-run --note "Awaiting reviewed behavior tests"
+```
+
+The optional `--report-sha256` records a reported report/artifact digest; it
+does **not** retrieve, parse, or verify that report. Evidence has
+`trust: self_reported_unverified`, `execution_performed: false`, and
+`grants_permissions: false`. An entry saying `passed` is **not a verified
+receipt or approval**, and it cannot activate any skill. The record is explicitly
+a user's claim about an external observation, not a statement about a test run
+performed by this command.
+
+To graduate executable abilities from quarantine in a later phase, use a
+separate, trusted workflow that independently validates the report, confirms
+the exact skill/content digest, checks worker isolation and test relevance,
+and obtains explicit human authorization. Do not infer consent or promote a
+record based on a self-reported event.
+
+No execution hooks, automatic activation, GitHub writes, browser connection,
+or model calls are added by these commands.

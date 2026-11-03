@@ -9,6 +9,8 @@ import hashlib
 import json
 import os
 import re
+import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 
 KINDS = ("knowledge", "workflow", "executable")
@@ -175,6 +177,98 @@ class SkillCatalog:
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp, self.path)
+
+
+    @staticmethod
+    def _public(item):
+        """Never expose full submitted instruction bodies in discovery results."""
+        return {key: value for key, value in item.items() if key != "body"}
+
+    def search_ranked(self, query="", *, kind=None, limit=25):
+        """Offline FTS5 search over quarantined metadata/instructions, no execution.
+
+        The search index is ephemeral: JSON remains the only durable skill
+        catalog and no untrusted content is interpreted as SQL/FTS syntax.
+        """
+        if kind is not None and kind not in KINDS:
+            raise ValueError("Invalid kind")
+        if not isinstance(query, str) or len(query) > 200 or not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 100:
+            raise ValueError("Search query or limit exceeds supported bounds")
+        items = self._read()["skills"]
+        if not query.strip():
+            return [self._public(x) for x in items if kind is None or x["kind"] == kind][:limit]
+        # Quote every token. Operators and punctuation from a user's query
+        # must be searched as data, not executed as FTS5 query language.
+        tokens = list(dict.fromkeys(re.findall(r"[^\W_]+", query.casefold(), re.UNICODE)))
+        if not tokens or len(tokens) > 12 or any(len(token) > 64 for token in tokens):
+            raise ValueError("Query must have 1–12 bounded search words")
+        expression = " AND ".join('"' + token + '"' for token in tokens)
+        try:
+            with sqlite3.connect(":memory:") as connection:
+                connection.execute("CREATE VIRTUAL TABLE skill_search USING fts5(name, description, body, kind UNINDEXED, tokenize='unicode61')")
+                connection.executemany(
+                    "INSERT INTO skill_search(name, description, body, kind) VALUES(?, ?, ?, ?)",
+                    ((x["name"], x["description"], x["body"], x["kind"]) for x in items),
+                )
+                rows = connection.execute(
+                    "SELECT rowid FROM skill_search "
+                    "WHERE skill_search MATCH ? AND (? IS NULL OR kind = ?) "
+                    "ORDER BY bm25(skill_search, 8.0, 3.0, 1.0), rowid LIMIT ?",
+                    (expression, kind, kind, limit),
+                ).fetchall()
+                return [self._public(items[row[0] - 1]) for row in rows]
+        except sqlite3.OperationalError as exc:
+            # Some embedded SQLite builds omit FTS5. Use a bounded,
+            # dependency-free fallback, never weakening quarantine.
+            if "no such module: fts5" not in str(exc).lower():
+                raise
+            scored = []
+            for index, x in enumerate(items):
+                if kind is not None and x["kind"] != kind:
+                    continue
+                name, desc, body = (x[k].casefold() for k in ("name", "description", "body"))
+                if all(token in (name + " " + desc + " " + body) for token in tokens):
+                    relevance = sum(8 if token in name else 3 if token in desc else 1 for token in tokens)
+                    scored.append((-relevance, index, x))
+            scored.sort(key=lambda row: (row[0], row[1]))
+            return [self._public(x) for _, _, x in scored[:limit]]
+
+    def record_evidence(self, digest, stage, reported_outcome, note, *, report_sha256=None):
+        """Append bounded *owner-reported* observations; never grant approval.
+
+        A statement about a scan or test is not a genuine Docker receipt.
+        This method cannot set verified/installed or granted_permissions.
+        """
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise ValueError("Expected exact SHA-256 digest of imported SKILL.md")
+        if stage not in ("scan", "sandbox", "test", "human-review"):
+            raise ValueError("Unsupported evidence stage")
+        if reported_outcome not in ("passed", "failed", "blocked", "not-run"):
+            raise ValueError("Unsupported reported outcome")
+        if not isinstance(note, str) or not 1 <= len(note.strip()) <= 500 or any(ord(ch) < 32 for ch in note):
+            raise ValueError("Evidence note must be 1–500 printable characters")
+        if report_sha256 is not None and (not isinstance(report_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", report_sha256)):
+            raise ValueError("Invalid reported artifact digest")
+        data = self._read()
+        for item in data["skills"]:
+            if item["digest"] != digest:
+                continue
+            evidence = item.setdefault("evidence", [])
+            if len(evidence) >= 32:
+                raise ValueError("Evidence record limit reached")
+            record = {
+                "stage": stage, "reported_outcome": reported_outcome,
+                "source_digest": digest, "report_sha256": report_sha256,
+                "note": note.strip(), "recorded_at": datetime.now(timezone.utc).isoformat(),
+                "trust": "self_reported_unverified",
+                "grants_permissions": False, "execution_performed": False,
+            }
+            evidence.append(record)
+            # Never promote a skill on the strength of a manually entered
+            # report. The execution/installation boundary is unchanged.
+            self._write(data)
+            return dict(record)
+        raise ValueError("Unknown skill digest")
 
     def search(self, query="", kind=None):
         if kind is not None and kind not in KINDS:
