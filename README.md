@@ -178,3 +178,7 @@ Original project software and its accompanying software documentation are licens
 The upstream mini-SWE-agent notice remains in [third_party_licenses/mini-swe-agent-MIT.txt](third_party_licenses/mini-swe-agent-MIT.txt). Imported skills, source, feeds and model materials retain their own terms; importing them does not relicense them.
 
 CAD files, models, datasets, images, audio, fonts and other non-software assets are not granted a new license by this software notice. Use their existing asset-specific terms. Where provenance or permission is unresolved, this notice does not supply redistribution permission; record the source, author, exact license and modifications before redistributing that material.
+
+## Related repos
+
+[Baby Vision](https://github.com/jimedusot-beep/Herbie-Baby-Vision) explores source investigation and human-reviewed proposals for Herbie. Toad Sage maintains its own catalog and sandbox.
