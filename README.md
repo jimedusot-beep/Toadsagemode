@@ -170,3 +170,11 @@ python tools/build_site.py
 Tests exercise trusted project code. Candidate samples are treated as data; live containment probes in `tools/lab_smoke.py --run` are opt-in on a separately provisioned **local** lab and are not run by GitHub Actions. CI checks Python 3.11/3.12, browser data logic and an iPhone-sized WebKit workflow. Pages deploys only `index.html` and the three `web/` assets after validation; catalogs, sources, ZIPs and private runtime directories are excluded.
 
 The historical download `sage-toad-github-pages.zip` is obsolete and excluded from deployment. Use the repository's current source and guides.
+
+## License and third-party content
+
+Original project software and its accompanying software documentation are licensed under **MIT**; see [LICENSE](LICENSE). Copyright 2026 jimedusot-beep. This notice covers only material the project authors have authority to license. Existing file-specific notices, third-party terms and prior license grants remain in effect.
+
+The upstream mini-SWE-agent notice remains in [third_party_licenses/mini-swe-agent-MIT.txt](third_party_licenses/mini-swe-agent-MIT.txt). Imported skills, source, feeds and model materials retain their own terms; importing them does not relicense them.
+
+CAD files, models, datasets, images, audio, fonts and other non-software assets are not granted a new license by this software notice. Use their existing asset-specific terms. Where provenance or permission is unresolved, this notice does not supply redistribution permission; record the source, author, exact license and modifications before redistributing that material.
