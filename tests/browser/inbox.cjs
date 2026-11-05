@@ -95,6 +95,8 @@ const server=http.createServer((req,res)=>{
     assert.equal(JSON.parse(fs.readFileSync(await recovered.path(),'utf8')).abilities.length,2);
     fp.on('dialog',dialog=>dialog.accept());
     await fp.locator('[data-ability-id]').first().getByRole('button',{name:'Delete',exact:true}).click();
+    // Delete commits through a Web Lock; wait for the async outcome instead of reading mid-flight.
+    await fp.waitForFunction(()=>/deleted/i.test(document.querySelector('#abilitymessage')?.textContent||''),undefined,{timeout:5000});
     assert.match(await fp.locator('#abilitymessage').innerText(),/deleted/i);
     assert.equal(await fp.locator('[data-ability-id]').count(),0);
     await full.close();
