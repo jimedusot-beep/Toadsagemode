@@ -7,6 +7,7 @@ name = "toad-sage-mode"
 version = "0.2.0"
 description = "Local-first, nonexecuting-by-default ability and mission engine"
 requires-python = ">=3.11"
+license = {text = "MIT"}
 dependencies = []
 
 [project.scripts]
