@@ -10,6 +10,7 @@ import json
 import uuid
 
 from .controlled_agent import ControlledAgent
+from .experiment_review import compare_candidates
 from .repair import validate_repair
 from .schema import package_digest
 
@@ -235,6 +236,15 @@ def run_experiment(engine, *, model=None, worker=None, trajectory_id=None):
     source_b = next(f["content"] for f in acceptance["manifest"]["files"] if f["path"] == "calculator.py")
     if source_a != source_b:
         report["reason"] = "Independent holdout source differed from proposed repair."
+        return report
+    # Compare the baseline and repaired revision using the same typed,
+    # read-only gates as the CLI. This is a second check of evidence, not a
+    # replacement for the independent holdout above.
+    comparison = compare_candidates(engine, original["id"], final_id)
+    report["comparison"] = comparison
+    if (comparison["status"] != "comparable"
+            or comparison["assessment"] != "challenger_improved_test_outcome"):
+        report["reason"] = "Candidate comparison failed or the repair did not improve the frozen test outcome."
         return report
     report["holdout_passed"] = True
     report["changed_paths"] = changed

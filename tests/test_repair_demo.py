@@ -57,6 +57,10 @@ class WorkerDouble:
         return {
             "schema": "toad-test-run-v1",
             "backend": "docker",
+            "image_id": "sha256:" + "c" * 64,
+            "policy": {"image": "toad-sage-lab:1", "timeout_seconds": 10,
+                       "output_bytes": 64000, "memory_mb": 128,
+                       "cpus": 0.5, "pids": 32, "disk_mb": 32},
             "digest": package_digest(package),
             "executed": self.execute,
             "passed": passed if self.execute else False,
@@ -116,6 +120,10 @@ class RepairExperimentTests(unittest.TestCase):
         self.assertTrue(report["repair"]["passed"])
         self.assertTrue(report["holdout"]["passed"])
         self.assertTrue(report["holdout_passed"])
+        self.assertEqual(report["comparison"]["status"], "comparable")
+        self.assertEqual(report["comparison"]["scores"],
+                         {"baseline": 0, "challenger": 1})
+        self.assertTrue(report["comparison"]["owner_review_required"])
         self.assertNotEqual(report["holdout_candidate_id"], report["final_candidate_id"])
         self.assertTrue(report["baseline"]["executed"])
         self.assertEqual(report["baseline"]["test_categories"], ["test_failure"])

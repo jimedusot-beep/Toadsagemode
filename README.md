@@ -2,7 +2,7 @@
 
 A local-first absorption inbox and Python development engine. Save ideas or source, inspect them without execution, and organize reusable candidates. Optional Ollama and a separately restricted Docker worker provide bounded Python project missions. The protected core is never rewritten by imported abilities.
 
-[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
+[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
 
 ## Next demonstration: empathy and personality learning
 
@@ -44,6 +44,7 @@ python tools/calculator_demo.py              # preflight only
 python tools/calculator_demo.py --run        # REAL Ollama + Docker, only on a provisioned host
 python tools/broken_calculator_demo.py       # metadata-only preflight
 python tools/broken_calculator_demo.py --run # opt-in real containment + source-only repair
+python -m toad_core experiments compare BASELINE_ID CHALLENGER_ID # read-only evidence gates
 ```
 
 [Broken calculator repair acceptance](docs/BROKEN_CALCULATOR_DEMO.md) documents a separate, real restricted-worker test for the experimental agent. GitHub CI uses labelled doubles; it does not prove real Docker or Ollama operation.\n\nThese are not claims that the Acer, model, private HTTPS endpoint or Docker
