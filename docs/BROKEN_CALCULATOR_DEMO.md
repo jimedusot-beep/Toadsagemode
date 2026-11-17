@@ -26,6 +26,12 @@ execution host; it does not require a new or unrestricted agent framework.
 - A successful real run must have a failed baseline receipt and a passed
   final receipt with the exact matching source digests, Docker image identity,
   `executed=true`, `cleanup_ok=true`, and the agent's own test observation.
+- After the agent reports a passing repair, a separately constructed
+  **holdout unittest suite** checks additional inputs (signs, zero, fractions)
+  in another restricted Docker run. The model never receives this holdout
+  fixture as an editable candidate. The holdout package must use the exact
+  same `calculator.py` source bytes and pass its own digest-bound receipt.
+  Passing only the model-visible tests is insufficient.
 - The final state is `ready_for_owner_review`, **not installed, merged, or
   deployed**. The owner must inspect the actual diff, tests and receipts.
 
@@ -70,8 +76,8 @@ services or deploy a webpage.
 
 When the real worker and model complete successfully, inspect:
 - `experiment-reports/containment-*.json` — all nine real containment probes.
-- `experiment-reports/repair-*.json` — baseline and final receipt summaries,
-  candidate digests, changed paths, and proposal diff.
+- `experiment-reports/repair-*.json` — baseline, final and independent
+  holdout receipt summaries, candidate digests, changed paths, and proposal diff.
 - `agent-trajectories/calculator-*.json` — agent action/observation audit trail.
 - `catalog.sqlite3` — full original and proposed source, test specifications,
   and receipts. Use `python -m toad_core --workspace PATH library show ID`
