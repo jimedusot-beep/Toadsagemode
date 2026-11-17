@@ -29,7 +29,9 @@ class AgentAndSkillsTests(unittest.TestCase):
                     {"action": "finish", "message": "done"},
                 ]))
                 state = agent.run("Review hello")
-                self.assertEqual(state["status"], "completed")
+                self.assertEqual(state["status"], "awaiting_review")
+                self.assertEqual(state["verification"], "unverified")
+                self.assertTrue(state["actions"][-1]["observation"]["owner_review_required"])
                 self.assertEqual([x["tool"] for x in state["actions"]], ["read_file", "inspect_candidate", "finish"])
                 self.assertIn("hello", state["actions"][0]["observation"]["content"])
                 reread = ControlledAgent(engine, "trial", model=ScriptedModel([]))
