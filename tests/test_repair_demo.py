@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from toad_core.engine import Engine
-from toad_core.repair_demo import BROKEN_SOURCE, FIXED_SOURCE, fixture, run_experiment
+from toad_core.repair_demo import BROKEN_SOURCE, FIXED_SOURCE, HOLDOUT_TESTS, fixture, run_experiment
 from toad_core.schema import package_digest
 from tools import broken_calculator_demo as cli
 
@@ -40,16 +40,20 @@ class ScriptedModel:
 class WorkerDouble:
     """Synthesizes evidence for CI control flow. No candidate is executed."""
 
-    def __init__(self, *, execute=True, always_pass=False):
+    def __init__(self, *, execute=True, always_pass=False, fail_holdout=False):
         self.calls = 0
         self.execute = execute
         self.always_pass = always_pass
+        self.fail_holdout = fail_holdout
 
     def run(self, package, *, cancel=None):
         self.calls += 1
         code = next(x["content"] for x in package["files"]
                     if x["path"] == "calculator.py")
         passed = self.always_pass or (code == FIXED_SOURCE)
+        if self.fail_holdout and any(f["path"] == "tests/test_holdout.py"
+                                     for f in package["files"]):
+            passed = False
         return {
             "schema": "toad-test-run-v1",
             "backend": "docker",
@@ -97,17 +101,22 @@ class RepairExperimentTests(unittest.TestCase):
         self.assertEqual(p["dependencies"], [])
         self.assertEqual(p["tests"], [{"kind": "unittest", "path": "tests"}])
         self.assertIn("assertRaises(ValueError)", p["files"][1]["content"])
+        self.assertNotIn("test_holdout.py", str(p))
+        self.assertIn("(17, 99)", HOLDOUT_TESTS)
 
     @unittest.skipUnless(shutil.which("git"), "Disposable candidate diffs require git")
     def test_broken_then_fixed_rehearsal_preserves_tests_and_requires_review(self):
         worker = WorkerDouble()
         report = run_experiment(self.engine, model=ScriptedModel(),
                                 worker=worker, trajectory_id="calculator-rehearsal")
-        self.assertEqual(worker.calls, 2)
+        self.assertEqual(worker.calls, 3)
         self.assertEqual(report["status"], "rehearsal_passed")
         self.assertEqual(report["evidence_mode"], "test_double_rehearsal")
         self.assertFalse(report["baseline"]["passed"])
         self.assertTrue(report["repair"]["passed"])
+        self.assertTrue(report["holdout"]["passed"])
+        self.assertTrue(report["holdout_passed"])
+        self.assertNotEqual(report["holdout_candidate_id"], report["final_candidate_id"])
         self.assertTrue(report["baseline"]["executed"])
         self.assertEqual(report["baseline"]["test_categories"], ["test_failure"])
         self.assertEqual(report["agent_status"], "awaiting_review")
@@ -123,6 +132,18 @@ class RepairExperimentTests(unittest.TestCase):
         self.assertIn("NOT real Docker", report["reason"])
         self.assertIn("-    return a + b", report["proposed_diff"])
         self.assertFalse(any(x["installed"] for x in self.engine.list()))
+
+    @unittest.skipUnless(shutil.which("git"), "Disposable candidate diffs require git")
+    def test_separate_holdout_rejects_a_superficially_passing_patch(self):
+        worker = WorkerDouble(fail_holdout=True)
+        report = run_experiment(self.engine, model=ScriptedModel(),
+                                worker=worker, trajectory_id="failed-holdout")
+        self.assertEqual(worker.calls, 3)
+        self.assertEqual(report["status"], "blocked")
+        self.assertTrue(report["repair"]["passed"])
+        self.assertFalse(report["holdout"]["passed"])
+        self.assertIn("Independent holdout", report["reason"])
+        self.assertFalse(report["installation_performed"])
 
     def test_missing_execution_blocks_before_any_model_action(self):
         model = ScriptedModel()
