@@ -83,6 +83,13 @@ When the real worker and model complete successfully, inspect:
   and receipts. Use `python -m toad_core --workspace PATH library show ID`
   to view each candidate without executing it.
 
+The report also includes `comparison` from the new deterministic
+baseline/challenger comparator. That comparator requires matching frozen
+tests, immutable image IDs and identical resource policies. Missing or
+incomparable evidence blocks the final `ready_for_owner_review` result.
+The `experiments compare` CLI can later inspect the same stored candidates
+without executing them. See [source adaptation register](OPEN_SOURCE_ADAPTATIONS.md).
+
 A separate operator should independently verify that the tests meaningfully
 cover the requested behavior. A passing test suite does not prove that a
 candidate is harmless or that the model has generally learned to repair code.
