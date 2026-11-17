@@ -31,7 +31,7 @@ class ReceiptDouble:
 
     def run(self, manifest, *, cancel=None):
         # Explicit fake outcome for deterministic data-contract tests.
-        passed = manifest["files"][0]["content"] == 'print("hello")\n'
+        passed = manifest["files"][0]["content"].startswith('print("hello")\n')
         tests = [{
             "index": 42 if self.wrong_index else 0,
             "kind": manifest["tests"][0]["kind"],
@@ -141,8 +141,8 @@ class CandidateComparisonTests(unittest.TestCase):
         self.engine.test(previous["id"], ReceiptDouble())
         self.engine.test(self.fixed["id"], ReceiptDouble())
         report = compare_candidates(self.engine, previous["id"], self.fixed["id"])
-        self.assertEqual(report["assessment"], "challenger_improved_test_outcome"
-                         if report["scores"]["baseline"] == 0 else "both_pass_no_quality_winner")
+        self.assertEqual(report["assessment"], "both_pass_no_quality_winner")
+        self.assertEqual(report["scores"], {"baseline": 1, "challenger": 1})
 
     def test_regression_is_not_preferred(self):
         self.engine.test(self.fixed["id"], ReceiptDouble())
