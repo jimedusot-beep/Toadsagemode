@@ -13,13 +13,11 @@ def sample(code,expected):
             'entrypoint':'main.py','tests':[{'kind':'python','path':'main.py','expected_stdout':expected}], 'permissions':[],'dependencies':[]}
 
 
-def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--run',action='store_true',help='Run known harmless containment probes on a provisioned local Docker host')
-    args=parser.parse_args()
-    if not args.run:parser.error('Pass --run to execute the local Docker probes')
+def run_probes():
+    """Return bounded live containment results; never substitute unit-test doubles."""
     worker=DockerWorker(LabPolicy(timeout_seconds=2))
     available=worker.availability()
-    if not available['available']:print(json.dumps({'live_verified':False,'blocked':available['reason']},indent=2));return 2
+    if not available['available']:return {'live_verified':False,'blocked':available['reason'],'results':[]}
     results=[]
     with tempfile.TemporaryDirectory(prefix='toad-host-canary-') as tmp:
         canary=Path(tmp)/'private.txt';canary.write_text('must not reach candidate')
@@ -40,7 +38,17 @@ def main():
             if category:ok=ok and any(t.get('category')==category for t in run['tests'])
             results.append({'probe':name,'restriction_observed':ok,'run':run})
     good=all(r['restriction_observed'] for r in results)
-    print(json.dumps({'live_verified':good,'results':results},indent=2));return 0 if good else 1
+    return {'live_verified':good,'results':results}
+
+
+def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--run',action='store_true',help='Run known harmless containment probes on a provisioned local Docker host')
+    args=parser.parse_args()
+    if not args.run:parser.error('Pass --run to execute the local Docker probes')
+    result=run_probes()
+    print(json.dumps(result,indent=2))
+    return 0 if result['live_verified'] else (2 if result.get('blocked') else 1)
 
 
 if __name__=='__main__':raise SystemExit(main())
