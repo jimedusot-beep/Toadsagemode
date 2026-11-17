@@ -1,82 +1,99 @@
-# Toad Sage development ledger
+# Toad Sage — development and integration ledger
 
-Owner review ledger · 2026-11-17 · maintained alongside source
+Updated: **2026-11-17** · Project: `jimedusot-beep/Toadsagemode`
 
-This file records what exists, what tests actually ran, and what remains blocked.
-**A checked code change is not proof of real Docker containment or local inference.**
-No one should merge, deploy, activate an imported ability, or grant host access
-on the basis of model statements or this ledger alone.
+This is an evidence inventory, not a claim of autonomous intelligence. Distinguish
+code present on `main`, CI using **explicit worker/model test doubles**, and
+acceptance using a real local Ollama + restricted Docker host.
 
-## Current baseline (read from `main` before this draft)
+## Integrated into `main`
 
-- [x] Local-first browser absorption inbox and local SQLite catalog are implemented.
-- [x] `toad_core/controlled_agent.py` contains a restricted five-action loop, not a shell agent.
-- [x] `toad_core/mission_engine.py` supports bounded Python generation, repair, checkpoint and packaging workflows.
-- [x] `.github/workflows/validate.yml` already defines a `merge-gate` check.
-- [ ] Check that the `merge-gate` check is required by an **active main-branch ruleset** (issue #9).
-- [ ] Run a real local restricted Docker smoke test and record containment evidence (issue #11).
-- [ ] Complete a real Ollama + Docker calculator mission on a provisioned execution host (issue #11).
-- [ ] Confirm human-reviewed sandbox activation and rollback with measured logs (issue #11).
-- [ ] Demonstrate independent, meaningful tests of a broken project and bounded repairs using real worker evidence.
-- [ ] Independently verify private iPhone-to-engine acceptance; the public Pages inbox remains offline-only.
+All three originally stacked PRs were merged in their dependency order,
+with a normal Git merge. The resulting files were independently fetched from
+`main` after the final merge.
 
-## Draft checkpoint: agent finish evidence contract
+| PR | Feature | Result | Merge commit | Original PR-head CI |
+| --- | --- | --- | --- | --- |
+| [#17](https://github.com/jimedusot-beep/Toadsagemode/pull/17) | Agent `finish` -> `awaiting_review`; evidence-linked result; frozen approval gate | **Merged** | [`848f464d`](https://github.com/jimedusot-beep/Toadsagemode/commit/848f464d0b5134d9bae148230d9bc116881e9c79) | [green](https://github.com/jimedusot-beep/Toadsagemode/actions/runs/44130419373) |
+| [#18](https://github.com/jimedusot-beep/Toadsagemode/pull/18) | Broken-calculator source-only agent repair rehearsal, independent holdout, opt-in local runner | **Merged** | [`99155c6b`](https://github.com/jimedusot-beep/Toadsagemode/commit/99155c6bcc8efe6fa570b04c8f9299cea0019651) | [green](https://github.com/jimedusot-beep/Toadsagemode/actions/runs/44132573508) |
+| [#20](https://github.com/jimedusot-beep/Toadsagemode/pull/20) | Read-only, deterministic comparison of candidate revisions; integration with repair demo | **Merged** | [`1400612d`](https://github.com/jimedusot-beep/Toadsagemode/commit/1400612d124ec511f4ffe745f513962a4d56aee3) | [green](https://github.com/jimedusot-beep/Toadsagemode/actions/runs/44134818701) |
 
-Branch: `fix/agent-finish-review-evidence-20261117`
+The final reviewed PR-head run for #20 passed **Python 3.11**, **Python 3.12**
+(136 trusted Python tests), **Mobile WebKit**, and the combined **merge-gate**.
+These tests exercise trusted application logic. Synthetic model/worker test
+doubles do *not* prove a successful real-model repair or Docker containment.
 
-Change:
-- A model `finish` action now ends in `awaiting_review`, **not** in `completed`.
-- The result names the selected candidate, records whether a currently verified
-  receipt is bound to its exact digest, and always flags owner review as required.
-- A finish without tests is allowed as a *proposal*, but is explicitly unverified.
-- A finish after multiple revisions must identify the exact candidate revision.
-- Completed/blocked/review-pending traces refuse additional actions.
-- Duplicate model prompt fields are removed.
-- Regression coverage uses explicit worker **doubles**, never a real Docker claim.
+**Important CI caveat:** `.github/workflows/validate.yml` deliberately
+excludes pushes to `main`, so its green runs are *pre-merge PR validation*.
+No fresh post-merge `main` validation run is claimed here. Confirm the
+`merge-gate` is required by an active branch ruleset (issue #9).
 
-Test evidence (first PR run: https://github.com/jimedusot-beep/Toadsagemode/actions/runs/44130050748):
-- [x] GitHub CI Python 3.11 and Python 3.12 passed on PR #17 (118 Python tests on 3.12).
-- [x] GitHub CI Mobile WebKit passed on PR #17.
-- [x] The combined `merge-gate` passed on PR #17.
-- [ ] Confirm CI remains green at the final branch head after this ledger-only update.
-- [ ] Owner reviews patch and decides separately whether to merge.
-- [ ] Real local Docker/Ollama acceptance remains **unverified** and must not be
-      inferred from CI doubles.
+## Existing foundations on `main`
 
-## Next bounded demonstration
+- [x] Phone-friendly local Feed Toad inbox, backup/import and deduplication.
+- [x] Local SQLite candidate catalog and project/mission history.
+- [x] Restricted five-action `ControlledAgent` (no arbitrary shell tool).
+- [x] Crash-safe trajectory persistence, source-only draft edits and bounded tests.
+- [x] `finish` generates an owner-review proposal, not an automatic install/merge.
+- [x] Deliberately broken calculator plus frozen and independent holdout tests.
+- [x] Read-only revision comparator with test, receipt, digest and lab-policy gates.
+- [x] Research register: `docs/OPEN_SOURCE_ADAPTATIONS.md`.
 
-Use the existing `tools/calculator_demo.py` and documented lab setup,
-not a second agent framework. Establish a real restricted Docker smoke receipt
-first, then a real local model request, then a deliberately broken
-**standard-library Python** project whose tests fail before a source-only
-repair and pass afterward.
+## Acceptance still outstanding
 
-Retain original source, changed source/diff, frozen test definitions, container
-image identifier, exact test outputs, digest, cleanup status, and owner decision.
-Do not broaden tools, install dependencies, mount home directories, connect
-hardware or expose Docker control to a web client.
+- [ ] Live Docker lab smoke tests on the intended execution host, with real
+      isolation enforcement and cleanup receipts (issue #11).
+- [ ] Real local model repairs intentionally broken code, followed by a
+      passing restricted Docker receipt, independent holdout and reviewable diff.
+- [ ] Review actual baseline/final candidate digests, container image ID,
+      mutable workspace restrictions and owner approval.
+- [ ] Verify and enforce active GitHub `main` ruleset requiring merge-gate
+      (issue #9).
+- [ ] Verify private iPhone access to the local engine; the public Pages inbox
+      remains offline-only.
+- [ ] Validate approved ability activation and rollback in the real lab.
+- [ ] Add provenance-aware lesson retrieval and memory consolidation without
+      installing Ada or importing third-party model weights.
+- [ ] Demonstrate a real, small application generated and tested by Toad Sage,
+      with separate project director approval.
+- [ ] Explicitly authorize any deployment or activation independently of a
+      code merge.
 
-## Draft checkpoint: deliberately broken calculator\n\nStacked review branch: `feature/reviewable-broken-calculator-demo-20261117` (depends on review of PR #17).\n\n- [x] Add trusted, intentionally broken calculator fixture with frozen unittest cases.\n- [x] Add a review-only source-repair exercise using the existing controlled agent.\n- [x] Add a real-run CLI which first requires the nine live Docker containment probes.\n- [x] Add fail-closed rehearsal tests using explicitly simulated model/worker responses.
-- [x] Require independently run holdout tests that the agent cannot modify.\n- [ ] Record green CI Python, Mobile WebKit and merge-gate results for the stacked PR.\n- [ ] Run on an independently provisioned lab host with real Docker/Ollama receipts.\n- [ ] Review original/final candidate digests, changed source, immutable tests and container image ID.\n- [ ] Decide separately whether to merge either PR or activate any version.\n\n## Draft checkpoint: deterministic code comparison
+## Safe next command — metadata-only
 
-Stacked branch: `feature/deterministic-candidate-comparison-20261117`
-(based on the draft broken-calculator PR #18).
+From an independently trusted **local clone**, before running submitted code:
 
-- [x] Research primary upstream licenses for MinimalAgent, Ada, Agent Dialectic Resolver and gitevolve.
-- [x] Add original Python, read-only comparison with frozen-test, immutable image, receipt and policy checks.
-- [x] Make the existing calculator repair require the comparison before reporting owner-review readiness.
-- [x] Add explicit worker-double regression tests for passing/failing/tied, changed tests, missing receipts and mismatched execution conditions.
-- [ ] Review CI Python, Mobile WebKit and merge-gate results on the stacked PR.
-- [ ] Demonstrate real local Docker/Ollama receipts; CI doubles are not acceptance evidence.
-- [ ] Owner independently reviews staged PRs before any merge or ability activation.
+```sh
+python tools/broken_calculator_demo.py
+```
 
-## Evidence legend
+To attempt real execution, first provision the local model and the restricted
+Docker image per [LAB.md](LAB.md), confirm the intended machine's security
+controls, then explicitly use `--run`. The runner first requires the nine
+local containment probes; it refuses to fall back to host execution.
 
-- **Implemented:** source code exists in the repository.
-- **Unit-tested:** GitHub CI or locally executed tests are explicitly linked.
-- **Lab-verified:** real restricted worker evidence, image ID and cleanup receipt exist.
-- **Owner-approved:** a separate explicit human approval of the specific snapshot.
-- **Deployed:** separately authorized rollout and device/browser acceptance were recorded.
+The comparison command reads existing private catalog records without
+executing source:
 
-References: `README.md`, `docs/LAB.md`, `docs/MISSIONS.md`,
-`tests/test_agent_skills_git.py`, GitHub issues #9 and #11.
+```sh
+python -m toad_core experiments compare BASELINE_ID CHALLENGER_ID
+```
+
+See [Broken Calculator Demo](BROKEN_CALCULATOR_DEMO.md) and
+[Open Source Adaptations](OPEN_SOURCE_ADAPTATIONS.md). Source licenses are
+reviewed in the adaptation register, but no wholesale external coding agent
+framework has been installed.
+
+## Evidence terminology
+
+- **Implemented** — source exists on `main`.
+- **CI-tested** — test suite and immutable run ID are recorded.
+- **Lab-verified** — a *real* restricted worker's behavior, image and cleanup
+  have been independently checked on the intended host.
+- **Owner-approved** — an explicit approval of the specified revision and
+  evidence after review.
+- **Deployed** — a separately authorized activation and device/browser
+  acceptance record exist.
+
+Nothing in the three merges activated imported code, gave the agent arbitrary
+host permissions, deployed a web app, or proved autonomous game development.
