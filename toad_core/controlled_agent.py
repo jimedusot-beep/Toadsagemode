@@ -19,7 +19,7 @@ from .engine import Engine
 from .git_drafts import GitDraft
 from .models import OllamaAdapter, ModelError
 from .repair import validate_repair
-from .schema import PackageError
+from .schema import PackageError, package_digest
 
 ACTIONS = ("read_file", "inspect_candidate", "propose_edit", "test_candidate", "finish")
 MAX_STEPS = 12
@@ -75,9 +75,33 @@ class ControlledAgent:
 
     def _observation(self, tool, action):
         identifier = action.get("candidate_id")
+        allowed = self.state.get("allowed_candidates", [])
         if tool == "finish":
-            return {"completed": True, "message": str(action.get("message", ""))[:500]}
-        if not isinstance(identifier, str) or identifier not in self.state.get("allowed_candidates", []):
+            # A finished agent turn is a review proposal, not proof of a working
+            # program. Tie any reported verification to this exact candidate.
+            if identifier is None and len(allowed) == 1:
+                identifier = allowed[0]
+            if not isinstance(identifier, str) or identifier not in allowed:
+                raise PackageError("Finish must identify one allowed candidate revision")
+            candidate = self.engine.get(identifier)
+            receipt = self.engine.store.latest_receipt(identifier)
+            verified = bool(
+                package_digest(candidate["manifest"]) == candidate["digest"]
+                and candidate.get("verification") == "verified"
+                and receipt is not None
+                and receipt.get("candidate_id") == identifier
+                and receipt.get("digest") == candidate["digest"]
+                and receipt.get("passed") is True
+                and receipt.get("executed") is True
+                and receipt.get("backend") == "docker"
+                and receipt.get("cleanup_ok") is True
+            )
+            return {"finished": True, "candidate_id": identifier,
+                    "verification": "verified" if verified else "unverified",
+                    "receipt_id": receipt["id"] if verified else None,
+                    "owner_review_required": True, "installed": False,
+                    "message": str(action.get("message", ""))[:500]}
+        if not isinstance(identifier, str) or identifier not in allowed:
             raise PackageError("Candidate must belong to this trajectory")
         candidate = self.engine.get(identifier)
         if tool == "read_file":
@@ -125,6 +149,8 @@ class ControlledAgent:
 
     def execute_actions(self, message):
         """Only one explicit allowed action per model response; no arbitrary commands."""
+        if self.state["status"] in ("awaiting_review", "completed", "blocked"):
+            raise PackageError("Terminal trajectory cannot execute another action")
         if not isinstance(message, dict) or message.get("action") not in ACTIONS:
             raise PackageError("Agent model must return one allowlisted action")
         tool = message["action"]
@@ -137,7 +163,9 @@ class ControlledAgent:
         self.state["actions"].append({"action_hash": key, "tool": tool, "observation": observation, "at": time.time()})
         self.state["pending"] = None
         if tool == "finish":
-            self.state["status"] = "completed"
+            self.state["status"] = "awaiting_review"
+            self.state["final_candidate_id"] = observation["candidate_id"]
+            self.state["verification"] = observation["verification"]
         self._save()
         return observation
 
@@ -151,10 +179,10 @@ class ControlledAgent:
             "goal": goal, "allowed_actions": ACTIONS,
             "instructions": ["Respond with one JSON object specifying exactly one allowlisted action.",
                              "No shell commands, host file paths, network access, tool installation or policy changes.",
-                             "Candidate ID is required except for finish.",
+                             "Finish must name the allowed candidate revision when edits created multiple revisions.",
+                             "Finish means awaiting human review, not installation or deployment.",
                              "Existing tests, permissions, dependencies and protected core cannot be modified.",
                              "Observe results before proposing another action; finish if blocked."],
-            "allowed_candidate_ids": self.state.get("allowed_candidates", []),
             "allowed_candidate_ids": self.state.get("allowed_candidates", []),
             "observations": self.state["actions"][-5:],
         }, ensure_ascii=False)
@@ -171,13 +199,13 @@ class ControlledAgent:
             self.state["blocked_reason"] = "Interrupted uncertain action; no automatic replay"
             self._save()
             return self.state
-        if self.state["status"] in ("completed", "blocked"):
+        if self.state["status"] in ("awaiting_review", "completed", "blocked"):
             return self.state
         began = time.monotonic()
         while self.state["model_calls"] < MAX_STEPS and time.monotonic() - began < MAX_SECONDS:
             try:
                 self.step(goal)
-                if self.state["status"] == "completed":
+                if self.state["status"] != "ready":
                     break
             except (PackageError, ModelError, ValueError, OSError, KeyError) as exc:
                 self.state["status"] = "blocked"
