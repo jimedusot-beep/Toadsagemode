@@ -42,9 +42,11 @@ python -m toad_core skills list --search debugging
 python -m toad_core agent run demo1 --candidate-id CANDIDATE_ID --goal "Inspect this source and propose a tested repair"
 python tools/calculator_demo.py              # preflight only
 python tools/calculator_demo.py --run        # REAL Ollama + Docker, only on a provisioned host
+python tools/broken_calculator_demo.py       # metadata-only preflight
+python tools/broken_calculator_demo.py --run # opt-in real containment + source-only repair
 ```
 
-These are not claims that the Acer, model, private HTTPS endpoint or Docker
+[Broken calculator repair acceptance](docs/BROKEN_CALCULATOR_DEMO.md) documents a separate, real restricted-worker test for the experimental agent. GitHub CI uses labelled doubles; it does not prove real Docker or Ollama operation.\n\nThese are not claims that the Acer, model, private HTTPS endpoint or Docker
 sandbox has been provisioned. A successful real calculator run must produce
 an actual restricted Docker receipt and project ZIP. See the detailed bridge
 documentation for scope, tests, and upstream mini-SWE-agent MIT attribution.
