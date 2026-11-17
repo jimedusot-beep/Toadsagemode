@@ -56,7 +56,7 @@ image identifier, exact test outputs, digest, cleanup status, and owner decision
 Do not broaden tools, install dependencies, mount home directories, connect
 hardware or expose Docker control to a web client.
 
-## Evidence legend
+## Draft checkpoint: deliberately broken calculator\n\nStacked review branch: `feature/reviewable-broken-calculator-demo-20261117` (depends on review of PR #17).\n\n- [x] Add trusted, intentionally broken calculator fixture with frozen unittest cases.\n- [x] Add a review-only source-repair exercise using the existing controlled agent.\n- [x] Add a real-run CLI which first requires the nine live Docker containment probes.\n- [x] Add fail-closed rehearsal tests using explicitly simulated model/worker responses.\n- [ ] Record green CI Python, Mobile WebKit and merge-gate results for the stacked PR.\n- [ ] Run on an independently provisioned lab host with real Docker/Ollama receipts.\n- [ ] Review original/final candidate digests, changed source, immutable tests and container image ID.\n- [ ] Decide separately whether to merge either PR or activate any version.\n\n## Evidence legend
 
 - **Implemented:** source code exists in the repository.
 - **Unit-tested:** GitHub CI or locally executed tests are explicitly linked.
