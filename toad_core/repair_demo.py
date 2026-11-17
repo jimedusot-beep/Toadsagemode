@@ -64,6 +64,28 @@ if __name__ == "__main__":
 """
 
 
+# Independent regression cases are not included in the agent's editable
+# candidate. They are supplied only AFTER the proposed fix is frozen.
+HOLDOUT_TESTS = """import unittest
+from calculator import add, subtract, multiply, divide
+
+
+class HiddenAcceptanceCases(unittest.TestCase):
+    def test_subtraction_across_signs_and_zero(self):
+        for a, b in [(0, 0), (17, 99), (-7, 5), (13, -11),
+                     (1000, 100), (0.5, 0.75), (-2.5, -4.25)]:
+            with self.subTest(a=a, b=b):
+                self.assertEqual(subtract(a, b), a - b)
+
+    def test_other_calculator_operations(self):
+        self.assertEqual(add(-3, 9), 6)
+        self.assertEqual(multiply(-0.5, 8), -4)
+        self.assertEqual(divide(-9, 2), -4.5)
+        with self.assertRaises(ValueError):
+            divide(-12, 0)
+"""
+
+
 def fixture():
     """Only source under calculator.py is permitted to change."""
     return {
@@ -133,6 +155,7 @@ def run_experiment(engine, *, model=None, worker=None, trajectory_id=None):
         "deployment_performed": False,
         "baseline": None,
         "repair": None,
+        "holdout": None,
         "reason": None,
     }
     original = engine.ingest_package(fixture(), source="trusted-broken-calculator-demo")
@@ -192,6 +215,28 @@ def run_experiment(engine, *, model=None, worker=None, trajectory_id=None):
                a["observation"].get("executed") is True for a in state["actions"]):
         report["reason"] = "Agent did not directly observe a passing sandbox test."
         return report
+    # Run independent holdout cases as a distinct package. The agent never
+    # receives or edits this holdout source; it remains a second Docker check
+    # of identical candidate source bytes with extra acceptance requirements.
+    acceptance_manifest = {
+        **fixed["manifest"],
+        "name": "toad-calculator-independent-acceptance",
+        "files": [*fixed["manifest"]["files"],
+                  {"path": "tests/test_holdout.py", "content": HOLDOUT_TESTS}],
+    }
+    acceptance = engine.ingest_package(acceptance_manifest, source="trusted-calculator-holdout")
+    holdout_receipt = engine.test(acceptance["id"], worker=worker)
+    report["holdout"] = receipt_summary(holdout_receipt)
+    report["holdout_candidate_id"] = acceptance["id"]
+    if not strong_receipt(holdout_receipt, acceptance, should_pass=True):
+        report["reason"] = "Independent holdout tests did not pass; not ready for owner approval."
+        return report
+    source_a = next(f["content"] for f in fixed["manifest"]["files"] if f["path"] == "calculator.py")
+    source_b = next(f["content"] for f in acceptance["manifest"]["files"] if f["path"] == "calculator.py")
+    if source_a != source_b:
+        report["reason"] = "Independent holdout source differed from proposed repair."
+        return report
+    report["holdout_passed"] = True
     report["changed_paths"] = changed
     report["final_candidate_id"] = final_id
     report["final_digest"] = package_digest(fixed["manifest"])
