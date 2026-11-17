@@ -34,10 +34,11 @@ Change:
 - Duplicate model prompt fields are removed.
 - Regression coverage uses explicit worker **doubles**, never a real Docker claim.
 
-Test evidence:
-- [ ] GitHub CI Python 3.11 and Python 3.12 pass on this PR.
-- [ ] GitHub CI Mobile WebKit passes on this PR.
-- [ ] The combined `merge-gate` passes on this PR.
+Test evidence (first PR run: https://github.com/jimedusot-beep/Toadsagemode/actions/runs/44130050748):
+- [x] GitHub CI Python 3.11 and Python 3.12 passed on PR #17 (118 Python tests on 3.12).
+- [x] GitHub CI Mobile WebKit passed on PR #17.
+- [x] The combined `merge-gate` passed on PR #17.
+- [ ] Confirm CI remains green at the final branch head after this ledger-only update.
 - [ ] Owner reviews patch and decides separately whether to merge.
 - [ ] Real local Docker/Ollama acceptance remains **unverified** and must not be
       inferred from CI doubles.
