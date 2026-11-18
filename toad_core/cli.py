@@ -40,6 +40,13 @@ def parser():
     evidence=sk.add_parser('evidence',help='Record unverified local scan/test observations; never approve or run code')
     evidence.add_argument('digest');evidence.add_argument('stage',choices=['scan','sandbox','test','human-review']);evidence.add_argument('outcome',choices=['passed','failed','blocked','not-run'])
     evidence.add_argument('--note',required=True);evidence.add_argument('--report-sha256')
+    app=commands.add_parser('app',help='Build reviewed template-based offline web apps; no AI execution')
+    app_sub=app.add_subparsers(dest='action',required=True)
+    new_app=app_sub.add_parser('create',help='Create a task app without overwriting an existing build')
+    new_app.add_argument('name',help='Lowercase app slug')
+    new_app.add_argument('--title',help='Visible application title')
+    new_app.add_argument('--theme',choices=['forest','midnight'],default='forest')
+    app_sub.add_parser('inspect',help='Read-only source integrity check').add_argument('name')
     experiments=commands.add_parser('experiments',help='Read-only comparison of tested source revisions')
     comparisons=experiments.add_subparsers(dest='action',required=True)
     compare=comparisons.add_parser('compare',help='Compare two revisions with identical frozen tests and lab policy')
@@ -132,6 +139,12 @@ def dispatch(engine,args):
         source=Path(args.path)
         if source.is_symlink() or source.stat().st_size>120000:raise PackageError('Unsafe/oversized skill input')
         return registry.register(source.read_text(encoding='utf-8'),kind=args.kind,permissions=args.permission,compatibility={})
+    if args.command=='app':
+        from .app_studio import AppStudio
+        studio=AppStudio(engine.store.workspace)
+        if args.action=='create':
+            return studio.create(args.name,title=args.title,theme=args.theme)
+        return studio.inspect(args.name)
     if args.command=='experiments':
         from .experiment_review import compare_candidates
         if args.action=='compare':

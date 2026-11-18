@@ -15,3 +15,6 @@ toad = "toad_core.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["toad_core*"]
+
+[tool.setuptools.package-data]
+"toad_core.studio_templates" = ["*.html", "*.css", "*.js"]
