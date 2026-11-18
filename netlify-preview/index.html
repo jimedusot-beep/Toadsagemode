@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="color-scheme" content="dark">
+  <title>Toad Sage Tasks</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body data-theme="forest">
+  <a class="skip" href="#task-list">Skip to tasks</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="logo" aria-hidden="true">🐸</div>
+      <div><p class="eyebrow">TOAD SAGE / APP STUDIO</p><h1>Toad Sage Tasks</h1><p class="subtitle">A little progress, every day.</p></div>
+    </header>
+    <main>
+      <section class="panel" aria-labelledby="create-title">
+        <h2 id="create-title">Add a task</h2>
+        <form id="task-form">
+          <label for="task-input">What needs doing?</label>
+          <div class="form-row">
+            <input id="task-input" type="text" maxlength="120" autocomplete="off" placeholder="e.g. Finish the project outline" required>
+            <button type="submit" class="primary">Add task</button>
+          </div>
+        </form>
+        <p id="message" role="status" aria-live="polite">Stored only in this browser when storage is available.</p>
+      </section>
+      <section class="panel tasks" aria-labelledby="list-title">
+        <div class="section-header"><h2 id="list-title">Your tasks</h2><span id="count" class="count">0 remaining</span></div>
+        <div class="filters" role="group" aria-label="Filter tasks">
+          <button type="button" data-filter="all" aria-pressed="true">All</button>
+          <button type="button" data-filter="active" aria-pressed="false">Active</button>
+          <button type="button" data-filter="done" aria-pressed="false">Completed</button>
+        </div>
+        <ul id="task-list" aria-label="Task list"></ul>
+        <p id="empty" class="empty">No tasks yet. Add one above.</p>
+        <button id="clear-done" class="subtle" type="button" disabled>Clear completed</button>
+      </section>
+    </main>
+    <footer>Offline-first · No login · No tracking · Built from a reviewed Toad Sage template</footer>
+  </div>
+</body>
+</html>
