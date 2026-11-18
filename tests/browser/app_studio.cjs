@@ -68,7 +68,7 @@ const server = http.createServer((req,res) => {
     assert.equal(await page.locator('#count').innerText(),'1 remaining');
     await page.getByRole('button',{name:'Active'}).click();
     assert.equal(await page.locator('.task').count(),1);
-    await page.getByRole('button',{name:'Completed'}).click();
+    await page.getByRole('button',{name:'Completed',exact:true}).click();
     assert.equal(await page.locator('.task').count(),1);
     assert.equal(await page.locator('.task-text').innerText(),'Finish the outline');
     await page.getByRole('button',{name:'Clear completed'}).click();
