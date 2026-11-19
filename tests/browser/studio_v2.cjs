@@ -118,6 +118,9 @@ async function open(page,url) {
     // A conflicting saved name cannot silently overwrite a newer local revision.
     await page.getByRole('button',{name:'Load: college-notes'}).click();
     await page.fill('#title','Updated Locally');
+    // app.js auto-suggests a fresh slug on title edits; deliberately retain
+    // the original slug to exercise the collision/refusal rule.
+    await page.fill('#slug','college-notes');
     await page.getByRole('button',{name:'Save current project'}).click();
     const beforeConflict=await page.evaluate(()=>
       localStorage.getItem('toad-sage-free-studio-projects-v1'));
