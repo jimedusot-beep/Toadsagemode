@@ -81,6 +81,23 @@
     return json;
   }
 
+  function mergeProjects(existing, incoming) {
+    // Backup import is additive only. Never replace owner settings silently.
+    serializeProjects(existing);
+    serializeProjects(incoming);
+    const records=new Map(existing.map(item=>[item.name,item]));
+    for(const item of incoming) {
+      const old=records.get(item.name);
+      if(old && JSON.stringify(old)!==JSON.stringify(item)) {
+        throw Error('Backup conflicts with saved project '+item.name+'; nothing was changed.');
+      }
+      if(!old) records.set(item.name,item);
+    }
+    const combined=[...records.values()].sort((a,b)=>a.name.localeCompare(b.name));
+    serializeProjects(combined);
+    return combined;
+  }
+
   function describeKind(kind) {
     return ({tasks:'Task manager',notes:'Notes',flashcards:'Flashcards'})[kind]||'Flashcards';
   }
@@ -141,6 +158,11 @@
     const empty=document.querySelector('#projects-empty');
     const count=document.querySelector('#project-count');
     const screen=document.querySelector('#preview-size');
+    const backup=document.querySelector('#backup-projects');
+    const backupLink=document.querySelector('#backup-link');
+    const restoreFile=document.querySelector('#backup-file');
+    const restore=document.querySelector('#restore-projects');
+    let backupUrl=null;
     let projects=[];
     let storageWritable=true;
     let pendingDelete=null;
@@ -148,6 +170,12 @@
     function notice(msg, style='') {
       status.textContent=msg;
       status.className=style;
+    }
+    function clearBackupDownload() {
+      backupLink.hidden=true;
+      backupLink.removeAttribute('download');
+      backupLink.setAttribute('href','#');
+      if(backupUrl){URL.revokeObjectURL(backupUrl);backupUrl=null;}
     }
     function selected() {
       return {
@@ -170,6 +198,8 @@
       }
     }
     function renderLibrary() {
+      backup.disabled=!storageWritable || projects.length===0;
+      restore.disabled=!storageWritable || !restoreFile.files?.length;
       list.replaceChildren();
       count.textContent=projects.length+' of '+MAX_PROJECTS;
       empty.hidden=projects.length>0;
@@ -223,6 +253,7 @@
       }
     }
     function readStorage() {
+      clearBackupDownload();
       try {
         projects=parseProjects(localStorage.getItem(KEY));
         storageWritable=true;
@@ -239,6 +270,49 @@
       renderLibrary();
     }
 
+    backup.addEventListener('click',()=>{
+      try {
+        if(!storageWritable || !projects.length) throw Error('No readable saved projects to export.');
+        clearBackupDownload();
+        const raw=serializeProjects(projects);
+        backupUrl=URL.createObjectURL(new Blob([raw],{type:'application/json;charset=utf-8'}));
+        backupLink.href=backupUrl;
+        backupLink.download='toad-sage-studio-projects-backup.json';
+        backupLink.hidden=false;
+        notice('Backup ready: '+projects.length+' project settings. Tap Download project backup and save it in iPad Files.','success');
+      } catch(error) {
+        notice(error.message||'Could not export a project backup.','error');
+      }
+    });
+    restoreFile.addEventListener('change',()=>{renderLibrary();});
+    restore.addEventListener('click',async()=>{
+      const file=restoreFile.files?.[0];
+      if(!file || !storageWritable) {
+        notice('Choose a JSON backup first. Existing unreadable storage cannot be overwritten.','error');
+        return;
+      }
+      restore.disabled=true;
+      try {
+        if(file.size>48000) throw Error('Backup file exceeds the supported size limit.');
+        const raw=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());
+        const incoming=parseProjects(raw);
+        const next=mergeProjects(projects,incoming);
+        const added=next.length-projects.length;
+        if(added) {
+          write(next);
+          clearBackupDownload();
+          renderLibrary();
+        }
+        notice(added ? 'Restored '+added+' project settings without replacing existing projects.' :
+          'Backup already matches saved projects; nothing changed.','success');
+      } catch(error) {
+        notice('Backup not restored. '+(error.message||'Invalid backup file.'),'error');
+      } finally {
+        restoreFile.value='';
+        renderLibrary();
+      }
+    });
+    window.addEventListener('pagehide',clearBackupDownload);
     form.addEventListener('input',updatePreview);
     form.addEventListener('change',updatePreview);
     screen.addEventListener('change',updatePreview);
@@ -263,7 +337,7 @@
 
   if (typeof module!=='undefined'&&module.exports) {
     module.exports={KEY,SCHEMA,MAX_PROJECTS,validProject,parseProjects,makeRecord,
-      upsertProject,serializeProjects,describeKind};
+      upsertProject,serializeProjects,mergeProjects,describeKind};
   }
   if (typeof document!=='undefined') {
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true});
