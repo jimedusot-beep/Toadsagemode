@@ -10,7 +10,7 @@ const path = require('node:path');
 
 const ROOT=path.resolve(__dirname,'../../free-studio');
 const ALLOWED=new Set([
-  '/index.html','/styles.css','/app.js','/templates.json','/v2.css','/v2.js'
+  '/index.html','/styles.css','/app.js','/templates.json','/v2.css','/v2.js','/v3.css','/v3.js'
 ]);
 const MIME={
   '.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8',
