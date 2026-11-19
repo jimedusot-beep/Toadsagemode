@@ -90,7 +90,9 @@ def installed_version(executable: str, expected: str) -> str:
     response = subprocess.run([executable, "--version"], capture_output=True, text=True,
                               check=True, timeout=15)
     observed = response.stdout.strip()
-    if observed != expected:
+    # Official distributions may prefix the version with the executable name.
+    parsed_version = observed.removeprefix("opencode ").strip()
+    if parsed_version != expected:
         raise RuntimeError(f"OpenCode version mismatch: expected {expected}; found {observed!r}")
     return observed
 
@@ -144,9 +146,14 @@ def main(argv: list[str] | None = None) -> int:
     try:
         check_config()
         if not args.launch:
+            executable = shutil.which("opencode")
+            if args.expected_version:
+                if not executable:
+                    raise RuntimeError("OpenCode CLI missing for requested version check")
+                installed_version(executable, args.expected_version)
             print("Configuration: approved ordered rules and hard-deny policies verified")
-            print("OpenCode executable: " + (shutil.which("opencode") or "not installed"))
-            print("Static preflight only: no runtime or actual security containment verified")
+            print("OpenCode executable: " + (executable or "not installed"))
+            print("No live model call or runtime permission test performed")
             return 0
         if not args.expected_version or not args.model:
             parser.error("--launch requires --expected-version and --model")
