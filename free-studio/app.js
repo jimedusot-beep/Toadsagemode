@@ -104,7 +104,9 @@
   /* ZIP STORE only. Non-executable bytes, no third-party compressor. */
   function makeZip(source) {
     const names = Object.keys(source);
-    if (!names.length || names.length>8 || names.some(n=>!/^[a-z][A-Za-z0-9_.-]*$/.test(n))) {
+    const allowed = new Set(['index.html','styles.css','app.js','README.md','build_report.json']);
+    if (names.length !== allowed.size || new Set(names).size !== allowed.size ||
+        names.some(n => !allowed.has(n))) {
       throw Error('Invalid ZIP file manifest.');
     }
     const entries=names.map(name=>{
