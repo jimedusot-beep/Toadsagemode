@@ -36,9 +36,9 @@ def _validate_name(name):
 def _validate_title(title):
     if not isinstance(title, str) or not title.strip() or len(title) > 80:
         raise PackageError("App title must contain 1–80 characters")
-    clean = title.strip()
-    if any(ord(ch) < 32 or ord(ch) == 127 for ch in clean):
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in title):
         raise PackageError("App title cannot contain control characters")
+    clean = title.strip()
     try:
         clean.encode("utf-8")
     except UnicodeError as exc:
