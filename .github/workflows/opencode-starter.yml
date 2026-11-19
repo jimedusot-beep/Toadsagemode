@@ -20,4 +20,4 @@ jobs:
       - name: Run offline regression tests
         run: python3 -m unittest discover -s tests -p 'test_opencode_v2_starter.py' -v
       - name: Check policy and pinned V2 release without installing OpenCode
-        run: python3 tools/opencode_v2_starter.py --validate-config
+        run: python3 tools/opencode_v2_starter.py --check
