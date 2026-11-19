@@ -57,6 +57,11 @@ def parser():
     app_sub.add_parser('draft-code',help='Quarantine AI-written HTML/CSS/JS for review ONLY; no browser execution').add_argument('goal')
     app_sub.add_parser('code-report',help='Show draft risk hints, digests and blocked release status').add_argument('id')
     app_sub.add_parser('code-show',help='Show the untrusted source strings as JSON for owner review').add_argument('id')
+    app_sub.add_parser('web-lab-status',help='Read local browser Docker capability metadata only')
+    browser_test=app_sub.add_parser('browser-test',help='Opt-in separate local WebKit Docker test for quarantined source')
+    browser_test.add_argument('id')
+    browser_test.add_argument('--checks',required=True,help='Independent reviewed JSON array of declarative checks')
+    browser_test.add_argument('--run',action='store_true',help='Explicitly authorize candidate code execution INSIDE isolated Docker')
     experiments=commands.add_parser('experiments',help='Read-only comparison of tested source revisions')
     comparisons=experiments.add_subparsers(dest='action',required=True)
     compare=comparisons.add_parser('compare',help='Compare two revisions with identical frozen tests and lab policy')
@@ -165,6 +170,26 @@ def dispatch(engine,args):
             if args.action=='code-report':
                 return generator.review(args.id)
             return generator.show(args.id)
+        if args.action in ('web-lab-status','browser-test'):
+            from .web_lab import WebKitDockerWorker, validate_checks
+            worker=WebKitDockerWorker()
+            if args.action=='web-lab-status':
+                return worker.availability()
+            # Caller must opt in, no accidental execution. A dry-run is
+            # metadata-only and does not open/execute any candidate source.
+            if not args.run:
+                return {'status':'blocked','reason':'Pass --run for an explicitly approved local Docker experiment; no candidate executed','executed':False,'deployed':False}
+            from .web_codegen import QuarantinedWebGenerator
+            from .schema import strict_json
+            from pathlib import Path
+            testpath=Path(args.checks)
+            if testpath.is_symlink() or not testpath.is_file() or testpath.stat().st_size>8000:
+                raise PackageError('Browser acceptance checks file must be an ordinary short JSON file')
+            checks=validate_checks(strict_json(testpath.read_text(encoding='utf-8')))
+            generator=QuarantinedWebGenerator(engine.store.workspace)
+            source=generator.show(args.id)['draft']
+            return worker.run_web_source(source,checks)
+
         planner=AIAppPlanner(engine.store.workspace)
         if args.action=='propose':
             return planner.propose(args.goal)
