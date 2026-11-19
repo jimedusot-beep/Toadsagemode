@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "integrations" / "opencode-v2" / "opencode.jsonc"
 VERSION = ROOT / "integrations" / "opencode-v2" / "version.txt"
+APPROVED_MODEL = "opencode/deepseek-v4.1-flash-free"
 
 # Exact allow/ask policy: additions cannot silently expand authority.
 PERMISSION_RULES = [
@@ -66,10 +67,12 @@ POLICY_RULES = [
 def validate_config(path: Path = CONFIG) -> dict:
     """Fail closed on unknown keys, missing rules, changed order or unexpected grants."""
     data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict) or set(data) != {"$schema", "permissions", "policies"}:
+    if not isinstance(data, dict) or set(data) != {"$schema", "model", "permissions", "policies"}:
         raise ValueError("Unexpected OpenCode settings; refusing to launch")
     if data["$schema"] != "https://opencode.ai/config.json":
         raise ValueError("Unexpected OpenCode schema")
+    if data["model"] != APPROVED_MODEL:
+        raise ValueError("Unapproved model; use the explicitly free test model only")
     for key, expected in (("permissions", PERMISSION_RULES), ("policies", POLICY_RULES)):
         rules = data[key]
         if not isinstance(rules, list):
@@ -123,11 +126,29 @@ def launch(executable: str) -> int:
     workspace.mkdir(mode=0o700)
     home.mkdir(mode=0o700)
     (workspace / "opencode.jsonc").write_bytes(CONFIG.read_bytes())
+    # Freeze acceptance inputs before the first agent prompt. Read-only mode is
+    # an audit cue, not protection against commands running as the same user.
+    import hashlib
+    frozen = {}
+    for filename in ("CALCULATOR_MISSION.md", "calculator-acceptance.test.mjs"):
+        src = ROOT / "integrations" / "opencode-v2" / filename
+        dest = workspace / filename
+        payload = src.read_bytes()
+        dest.write_bytes(payload)
+        dest.chmod(0o444)
+        frozen[filename] = hashlib.sha256(payload).hexdigest()
+    print("Frozen calculator test SHA256:", frozen["calculator-acceptance.test.mjs"], flush=True)
     print(f"Experiment directory: {directory}", flush=True)
     print("No host containment: run ONLY on a disposable host with no secrets.", flush=True)
     print("Approve each requested edit/shell command; choose a verified FREE model.", flush=True)
     print("Stop: Ctrl+C. Inspect source/test evidence, then delete this directory manually.", flush=True)
-    return subprocess.call([executable, "--standalone"], cwd=workspace, env=isolated_environment(home))
+    code = subprocess.call([executable, "--standalone"], cwd=workspace, env=isolated_environment(home))
+    altered = [name for name, expected in frozen.items()
+               if not (workspace / name).is_file()
+               or hashlib.sha256((workspace / name).read_bytes()).hexdigest() != expected]
+    if altered:
+        raise RuntimeError(f"Frozen acceptance inputs were modified: {altered}")
+    return code
 
 
 def main(argv: list[str] | None = None) -> int:
