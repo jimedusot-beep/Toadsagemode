@@ -140,11 +140,19 @@ class OpenAIResponsesAdapter:
         if not isinstance(outer, dict) or outer.get("status") != "completed":
             raise ModelError("Cloud model response did not complete successfully")
         outputs = outer.get("output")
-        if not isinstance(outputs, list) or len(outputs) != 1:
+        if not isinstance(outputs, list) or not 1 <= len(outputs) <= 16:
             raise ModelError("Cloud model response has unexpected output items")
-        message = outputs[0]
-        if not isinstance(message, dict) or message.get("type") != "message" or message.get("role") != "assistant":
-            raise ModelError("Cloud model returned unsupported output type")
+        messages = []
+        for item in outputs:
+            if not isinstance(item, dict) or item.get("type") not in ("reasoning", "message"):
+                raise ModelError("Cloud model returned unsupported tool or output item")
+            if item["type"] == "message":
+                if item.get("role") != "assistant":
+                    raise ModelError("Cloud model returned non-assistant message")
+                messages.append(item)
+        if len(messages) != 1:
+            raise ModelError("Cloud model must return one assistant message")
+        message = messages[0]
         content = message.get("content")
         if not isinstance(content, list) or len(content) != 1:
             raise ModelError("Cloud model returned unexpected content blocks")
