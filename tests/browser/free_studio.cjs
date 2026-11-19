@@ -78,7 +78,25 @@ function unzipStored(bytes) {
     await page.getByRole('link',{name:'Download prepared ZIP'}).click();
     const download=await event;
     assert.equal(download.suggestedFilename(),'physics-space-toad-sage-app.zip');
-    const files=unzipStored(fs.readFileSync(await download.path()));
+    const savedZip=fs.readFileSync(await download.path());
+    const files=unzipStored(savedZip);
+    await page.setInputFiles('#verify-zip-file',{
+      name:'physics-space-toad-sage-app.zip',mimeType:'application/zip',buffer:savedZip
+    });
+    await page.getByRole('button',{name:'Check ZIP source'}).click();
+    await page.waitForFunction(()=>document.querySelector('#verify-status').className==='success');
+    assert.match(await page.locator('#verify-status').innerText(),
+      /Source match: Physics & <Space> \(flashcards\).*No app code was run/);
+
+    const tampered=Buffer.from(savedZip);
+    tampered[60]^=1;
+    await page.setInputFiles('#verify-zip-file',{
+      name:'altered.zip',mimeType:'application/zip',buffer:tampered
+    });
+    await page.getByRole('button',{name:'Check ZIP source'}).click();
+    await page.waitForFunction(()=>document.querySelector('#verify-status').className==='error');
+    assert.match(await page.locator('#verify-status').innerText(),/ZIP not verified/);
+
     assert.deepEqual([...files.keys()].sort(),
       ['README.md','app.js','build_report.json','index.html','styles.css']);
     assert(files.get('index.html').includes('Physics &amp; &lt;Space&gt;'));

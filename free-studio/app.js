@@ -182,6 +182,76 @@
     return {files:sources,zip:makeZip(sources),report};
   }
 
+  // Inspect only STORE-mode ZIPs made by our reviewed browser template builder.
+  // Never unpack to disk, execute uploaded code, or grant an uploaded file authority.
+  function readBuildOptions(bytes) {
+    const paths=['index.html','styles.css','app.js','README.md','build_report.json'];
+    if (!(bytes instanceof Uint8Array) || bytes.length<100 || bytes.length>400000) {
+      throw Error('Choose a supported small Toad Sage app ZIP.');
+    }
+    const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+    const decoder=new TextDecoder('utf-8',{fatal:true});
+    let offset=0;
+    let report=null;
+    for(const expectedPath of paths) {
+      if(offset+30>bytes.length || view.getUint32(offset,true)!==0x04034b50 ||
+          view.getUint16(offset+6,true)!==0 || view.getUint16(offset+8,true)!==0) {
+        throw Error('Unsupported ZIP format or file layout.');
+      }
+      const expectedCrc=view.getUint32(offset+14,true);
+      const compressed=view.getUint32(offset+18,true);
+      const uncompressed=view.getUint32(offset+22,true);
+      const nameLength=view.getUint16(offset+26,true);
+      const extraLength=view.getUint16(offset+28,true);
+      if(compressed!==uncompressed || compressed>150000 ||
+          nameLength===0 || nameLength>100 || extraLength!==0 ||
+          offset+30+nameLength+compressed>bytes.length) {
+        throw Error('Unexpected ZIP entries or file sizes.');
+      }
+      const pathStart=offset+30;
+      const name=decoder.decode(bytes.subarray(pathStart,pathStart+nameLength));
+      if(name!==expectedPath) throw Error('The ZIP contains unsupported file paths.');
+      const start=pathStart+nameLength;
+      const data=bytes.subarray(start,start+compressed);
+      if(crc32(data)!==expectedCrc) throw Error('ZIP file checksum mismatch.');
+      if(expectedPath==='build_report.json') {
+        try { report=JSON.parse(decoder.decode(data)); }
+        catch(_) { throw Error('The ZIP build report is not readable JSON.'); }
+      }
+      offset=start+compressed;
+    }
+    if(offset+4>bytes.length || view.getUint32(offset,true)!==0x02014b50 ||
+        !report || typeof report!=='object' || Array.isArray(report)) {
+      throw Error('The ZIP is incomplete or missing its build report.');
+    }
+    return validateInput({
+      kind:report.kind,name:report.name,title:report.title,theme:report.theme
+    });
+  }
+
+  async function verifyDownloadedZip(bundle,bytes) {
+    validateCatalog(bundle);
+    const options=readBuildOptions(bytes);
+    // Rebuild from the currently loaded reviewed catalog, not from uploaded
+    // source/report claims. A self-consistent but modified ZIP must still fail.
+    const expected=await makePackage(bundle,options);
+    if(expected.zip.length!==bytes.length ||
+        expected.zip.some((value,index)=>value!==bytes[index])) {
+      throw Error('ZIP source does not match the current reviewed templates.');
+    }
+    if(!globalThis.crypto?.subtle) throw Error('HTTPS is needed for ZIP hashing.');
+    const digest=await crypto.subtle.digest('SHA-256',bytes);
+    return {
+      status:'source_matches_current_reviewed_catalog',
+      ...options,
+      zip_sha256:[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join(''),
+      source_executed:false,
+      individual_app_browser_tested:false,
+      deployed:false,
+      owner_review_required:true
+    };
+  }
+
   function suggestedSlug(title) {
     return (title||'my-app').toLowerCase().normalize('NFKD')
       .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-')
@@ -195,6 +265,9 @@
     const theme=document.querySelector('#theme');
     const status=document.querySelector('#status');
     const download=document.querySelector('#download');
+    const verifyFile=document.querySelector('#verify-zip-file');
+    const verifyButton=document.querySelector('#verify-zip');
+    const verifyStatus=document.querySelector('#verify-status');
     let editedSlug=false;
     slug.addEventListener('input',()=>{editedSlug=true;});
     title.addEventListener('input',()=>{
@@ -216,6 +289,32 @@
       return;
     }
     const link=document.querySelector('#download-link');
+    verifyFile.addEventListener('change',()=>{
+      verifyButton.disabled=!verifyFile.files?.length;
+      verifyStatus.textContent=verifyFile.files?.length ?
+        'Selected ZIP has not been checked.' : 'Choose an app ZIP to inspect.';
+      verifyStatus.className='';
+    });
+    verifyButton.addEventListener('click',async()=>{
+      const file=verifyFile.files?.[0];
+      if(!file) return;
+      verifyButton.disabled=true;
+      verifyStatus.textContent='Checking selected ZIP without executing it…';
+      verifyStatus.className='';
+      try {
+        if(file.size>400000) throw Error('The selected ZIP exceeds the size limit.');
+        const result=await verifyDownloadedZip(catalog,new Uint8Array(await file.arrayBuffer()));
+        verifyStatus.textContent='Source match: '+result.title+' ('+result.kind+
+          '). SHA-256 '+result.zip_sha256+'. No app code was run; owner review is still required.';
+        verifyStatus.className='success';
+      } catch(error) {
+        verifyStatus.textContent='ZIP not verified: '+
+          (error instanceof Error?error.message:'Unknown file error.');
+        verifyStatus.className='error';
+      } finally {
+        verifyButton.disabled=!verifyFile.files?.length;
+      }
+    });
     let readyUrl=null;
     function invalidateReadyDownload() {
       link.hidden=true;
@@ -250,7 +349,8 @@
     });
   }
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports={validateCatalog,validateInput,makeSources,makePackage,makeZip,suggestedSlug,crc32};
+    module.exports={validateCatalog,validateInput,makeSources,makePackage,makeZip,
+      readBuildOptions,verifyDownloadedZip,suggestedSlug,crc32};
   }
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',boot,{once:true});

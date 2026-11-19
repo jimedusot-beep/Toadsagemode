@@ -138,3 +138,36 @@ API key, model or laptop is used by the browser export/import operation.
 For the staging review, see the relevant draft PR's WebKit and Node
 regression checks. Only after owner approval and a separate release should
 these controls be described as available on a published Free Studio site.
+
+## iPad Build Lab — verify a downloaded app ZIP (draft)
+
+The Free Studio draft adds **Check your downloaded app ZIP**, independent of the
+existing project-settings backup. This feature does not require a laptop.
+
+1. In the separately reviewed Studio, create a Tasks, Notes or Flashcards app
+   using the existing trusted templates and save its app ZIP in iPad Files.
+2. In **Check your downloaded app ZIP**, choose the *app ZIP* you just saved
+   (not the GitHub workflow artifact wrapping the Studio website).
+3. Tap **Check ZIP source**. The browser reads this small ZIP locally, checks
+   exact expected paths, STORE-only entry layout and CRCs, extracts only the
+   nonexecutable build metadata, then **rebuilds the app from the current
+   reviewed template catalog and compares every ZIP byte**.
+4. A source match displays the app identity and its ZIP SHA-256 checksum.
+   A malformed, oversized, unrecognized or modified ZIP is refused without
+   executing or uploading its contents.
+
+**Important boundaries:** A source match establishes only byte-for-byte
+identity with the catalog currently served to that Studio. This is not an
+independent signature of the repository or a guarantee that the hosting
+site was trustworthy. It does **not** test the downloaded app's buttons,
+prove security, confirm Safari persistence, or deploy the app. The owner
+still needs to inspect the site/source and test the app in an appropriate
+separate preview. No AI-generated or third-party executable code is opened
+by this feature.
+
+Regression tests cover matching original ZIPs for all three reviewed app
+types and rejecting damaged or deliberately modified ZIPs. Mobile WebKit
+also selects the actual downloaded ZIP through a file picker. These tests
+are CI evidence, not a claim that physical iPad Safari has been tested.
+Do not merge or publish this stacked draft without reviewing its upstream
+PRs and testing the final approved build.

@@ -3,7 +3,8 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const catalog=require('../../free-studio/templates.json');
 const {
-  validateCatalog,validateInput,makeSources,makePackage,makeZip,suggestedSlug,crc32
+  validateCatalog,validateInput,makeSources,makePackage,makeZip,
+  readBuildOptions,verifyDownloadedZip,suggestedSlug,crc32
 }=require('../../free-studio/app.js');
 
 test('trusted browser catalog is strictly limited to three exact kinds',()=>{
@@ -45,4 +46,34 @@ test('all three reviewed app bundles generate bounded no-cost ZIPs',async()=>{
     assert(result.zip.length > 5000);
     assert.equal(Object.keys(result.report.files_sha256).length,4);
   }
+});
+
+test('the exact downloaded ZIP matches reviewed template bytes without execution',async()=>{
+  for(const kind of ['tasks','notes','flashcards']){
+    const options={kind,name:kind+'-student',title:'Study & <Verify>',theme:'forest'};
+    const built=await makePackage(catalog,options);
+    assert.deepEqual(readBuildOptions(built.zip),options);
+    const review=await verifyDownloadedZip(catalog,built.zip);
+    assert.equal(review.status,'source_matches_current_reviewed_catalog');
+    assert.equal(review.kind,kind);
+    assert.match(review.zip_sha256,/^[0-9a-f]{64}$/);
+    assert.equal(review.source_executed,false);
+    assert.equal(review.individual_app_browser_tested,false);
+    assert.equal(review.deployed,false);
+    assert.equal(review.owner_review_required,true);
+  }
+});
+
+test('corrupted, oversized, incompatible and self-consistent modified ZIPs fail closed',async()=>{
+  const options={kind:'tasks',name:'study-tasks',title:'My Tasks',theme:'midnight'};
+  const built=await makePackage(catalog,options);
+  const corrupted=built.zip.slice();
+  corrupted[50]^=1;
+  await assert.rejects(verifyDownloadedZip(catalog,corrupted),/checksum|match|format/i);
+  await assert.rejects(verifyDownloadedZip(catalog,new Uint8Array(400001)),/supported small/);
+  await assert.rejects(verifyDownloadedZip(catalog,new Uint8Array(5)),/supported small/);
+  const modified={...built.files,'app.js':built.files['app.js']+'\\nalert(1);'};
+  const forgedZip=makeZip(modified); // Valid ZIP CRCs, but source differs from trusted catalog.
+  await assert.rejects(verifyDownloadedZip(catalog,forgedZip),/does not match/);
+  assert.throws(()=>makeZip({...built.files,'secret.env':'not allowed'}),/manifest/);
 });
