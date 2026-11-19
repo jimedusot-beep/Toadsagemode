@@ -53,6 +53,11 @@ class StarterTests(unittest.TestCase):
             run.return_value.stdout = "opencode 2.3.2\n"
             self.assertEqual(starter.installed_version("/bin/opencode", "2.3.2"), "opencode 2.3.2")
 
+    def test_version_pin_real_cli_format(self):
+        with patch.object(starter.subprocess, "run") as run:
+            run.return_value.stdout = "opencode v2.3.2\n"
+            self.assertEqual(starter.installed_version("/bin/opencode", "2.3.2"), "opencode v2.3.2")
+
     def test_version_mismatch(self):
         with patch.object(starter.subprocess, "run") as run:
             run.return_value.stdout = "2.3.3\n"
