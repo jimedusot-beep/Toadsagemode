@@ -98,7 +98,9 @@ class StarterTests(unittest.TestCase):
             self.assertEqual(command[-1], starter.FREE_MODEL_CANDIDATES[0])
             self.assertTrue((kwargs["cwd"] / "opencode.jsonc").exists())
             self.assertTrue((kwargs["cwd"] / "CALCULATOR_MISSION.md").exists())
-            self.assertTrue((kwargs["cwd"] / "calculator-acceptance.test.mjs").exists())
+            self.assertTrue((kwargs["cwd"] / "CALCULATOR_ACCEPTANCE.md").exists())
+            self.assertFalse((kwargs["cwd"] / "calculator-acceptance.test.mjs").exists())
+            self.assertFalse((kwargs["cwd"] / "calculator.acceptance.test.mjs").exists())
             self.assertTrue(str(kwargs["cwd"]).startswith("/tmp/"))
             self.assertNotIn("OPENAI_API_KEY", kwargs["env"])
 
