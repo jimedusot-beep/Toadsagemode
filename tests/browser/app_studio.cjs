@@ -87,13 +87,13 @@ const server = http.createServer((req,res) => {
     const corruptContext = await browser.newContext({...devices['iPhone 13']});
     const corrupt = await corruptContext.newPage();
     await corrupt.goto(url);
-    await corrupt.evaluate(() => localStorage.setItem('toad-sage-task-list-v1','{bad'));
+    await corrupt.evaluate(() => localStorage.setItem('toad-sage-tasks-v1:browser-proof','{bad'));
     await corrupt.reload();
     assert.match(await corrupt.locator('#message').innerText(), /not be overwritten/i);
     await corrupt.fill('#task-input','Keep unsaved');
     await corrupt.getByRole('button',{name:'Add task'}).click();
     assert.equal(await corrupt.locator('.task').count(),1);
-    assert.equal(await corrupt.evaluate(() => localStorage.getItem('toad-sage-task-list-v1')),'{bad');
+    assert.equal(await corrupt.evaluate(() => localStorage.getItem('toad-sage-tasks-v1:browser-proof')),'{bad');
     await corruptContext.close();
 
     // Browser storage failure does not lose changes already shown on screen.

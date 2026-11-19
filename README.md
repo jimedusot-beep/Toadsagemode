@@ -2,7 +2,7 @@
 
 A local-first absorption inbox and Python development engine. Save ideas or source, inspect them without execution, and organize reusable candidates. Optional Ollama and a separately restricted Docker worker provide bounded Python project missions. The protected core is never rewritten by imported abilities.
 
-[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [First working app (App Studio)](docs/APP_STUDIO.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
+[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [First working app (App Studio)](docs/APP_STUDIO.md) · [AI app blueprint workflow](docs/AI_APP_BLUEPRINTS.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
 
 ## Next demonstration: empathy and personality learning
 
@@ -51,6 +51,31 @@ python -m toad_core experiments compare BASELINE_ID CHALLENGER_ID # read-only ev
 sandbox has been provisioned. A successful real calculator run must produce
 an actual restricted Docker receipt and project ZIP. See the detailed bridge
 documentation for scope, tests, and upstream mini-SWE-agent MIT attribution.
+
+## Experimental AI app blueprint workflow (no untrusted JS execution)
+
+[Read the AI App Blueprints guide](docs/AI_APP_BLUEPRINTS.md). A configured
+**local loopback Ollama** model may propose one of two reviewed app kinds:
+`tasks` or `notes`, with a validated title, slug, theme and declared
+missing features. The owner must inspect the proposal and explicitly approve
+the separate template-build command; all outputs remain unverified and
+undeployed until further testing and release review.
+
+```sh
+python -m toad_core app propose "Build a searchable study notebook"
+python -m toad_core app plan PLAN_ID
+python -m toad_core app build PLAN_ID --approve
+python -m toad_core app inspect APP_SLUG
+
+# Deterministic app creation, no model:
+python -m toad_core app create lecture-notes --title "Lecture Notes" --kind notes
+```
+
+**Important:** this is not yet a live AI app builder on iPhone/Netlify.
+GitHub tests use model doubles, not real local Ollama inference. The existing
+Python-only Docker worker cannot execute generated JavaScript candidates;
+the templates are reviewed, fixed source. Nothing is automatically merged,
+activated or published.
 
 ## Feed Toad on iPhone
 

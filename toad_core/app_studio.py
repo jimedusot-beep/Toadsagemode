@@ -21,6 +21,7 @@ from .schema import PackageError, strict_json
 
 NAME = re.compile(r"[a-z][a-z0-9-]{1,39}\Z")
 THEMES = ("forest", "midnight")
+APP_KINDS = ("tasks", "notes")
 SOURCE_FILES = ("index.html", "styles.css", "app.js", "README.md")
 REPORT = "build_report.json"
 TEMPLATES = "toad_core.studio_templates"
@@ -35,9 +36,9 @@ def _validate_name(name):
 def _validate_title(title):
     if not isinstance(title, str) or not title.strip() or len(title) > 80:
         raise PackageError("App title must contain 1–80 characters")
-    clean = title.strip()
-    if any(ord(ch) < 32 or ord(ch) == 127 for ch in clean):
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in title):
         raise PackageError("App title cannot contain control characters")
+    clean = title.strip()
     try:
         clean.encode("utf-8")
     except UnicodeError as exc:
@@ -62,33 +63,52 @@ class AppStudio:
         return root
 
     @staticmethod
-    def _templates(title, theme):
+    def _templates(name, title, theme, kind):
         template = files(TEMPLATES)
+        is_notes = kind == "notes"
+        page = "notes.html" if is_notes else "tasks.html"
+        script = "notes.js" if is_notes else "app.js"
+        base_js = template.joinpath(script).read_text(encoding="utf-8")
+        # The slug comes from a strict allowlist, not from untrusted JS.
+        storage_key = "toad-sage-" + kind + "-v1:" + name
+        if is_notes:
+            base_js = base_js.replace("{{STORAGE_KEY}}", storage_key)
+        else:
+            original = "const KEY = 'toad-sage-task-list-v1';"
+            if original not in base_js:
+                raise PackageError("Trusted task storage-key anchor is missing")
+            base_js = base_js.replace(original, "const KEY = '" + storage_key + "';")
+        css = template.joinpath("styles.css").read_text(encoding="utf-8")
+        if is_notes:
+            css += template.joinpath("notes.css").read_text(encoding="utf-8")
         return {
-            "index.html": template.joinpath("tasks.html").read_text(encoding="utf-8")
+            "index.html": template.joinpath(page).read_text(encoding="utf-8")
                 .replace("{{TITLE}}", html.escape(title, quote=True))
                 .replace("{{THEME}}", theme),
-            "styles.css": template.joinpath("styles.css").read_text(encoding="utf-8"),
-            "app.js": template.joinpath("app.js").read_text(encoding="utf-8"),
+            "styles.css": css,
+            "app.js": base_js,
             "README.md": (
-                "# Offline task application\n\n"
-                "Built using Toad Sage's fixed, reviewed task-list template.\n"
-                "Open index.html in a browser, or serve this directory using a "
-                "loopback-only local static server for reliable browser storage.\n"
-                "This app saves tasks in that browser's localStorage only.\n"
-                "It supports add, complete, filter, delete and clear completed.\n"
-                "Do not put secrets into tasks; this is not encrypted cloud storage.\n"
+                "# Offline " + kind + " application\n\n"
+                "Built from a reviewed, versioned Toad Sage " + kind + " template.\n"
+                "A browser stores this app's data locally under a distinct key.\n"
+                "The notes app supports create/edit/search/delete; the tasks app supports "
+                "create/toggle/filter/delete/clear completed.\n"
+                "Use a trusted local static server or Netlify preview for browser storage.\n"
+                "Browser storage is not an encrypted backup or cross-device sync.\n"
+                "Do not put secrets or client medical data into this demo.\n"
                 "Review source and browser tests before any deployment.\n"
-                "No AI source generation, Docker execution, installation or "
+                "No AI-authored executable source, Docker execution, installation or "
                 "deployment occurred during this build.\n"
             ),
         }
 
-    def create(self, name, *, title=None, theme="forest"):
+    def create(self, name, *, title=None, theme="forest", kind="tasks"):
         name = _validate_name(name)
         title = _validate_title(title if title is not None else name.replace("-", " ").title())
         if theme not in THEMES:
             raise PackageError("Theme must be forest or midnight")
+        if kind not in APP_KINDS:
+            raise PackageError("Supported app kinds are tasks or notes")
         parent = self._root(create=True)
         destination = parent / name
         if destination.exists() or destination.is_symlink():
@@ -97,7 +117,7 @@ class AppStudio:
         # mkdir fails if a directory or symlink appears concurrently.
         destination.mkdir(mode=0o700, exist_ok=False)
         try:
-            payloads = self._templates(title, theme)
+            payloads = self._templates(name, title, theme, kind)
             hashes = {}
             for path in SOURCE_FILES:
                 body = payloads[path].encode("utf-8")
@@ -109,7 +129,8 @@ class AppStudio:
                 "name": name,
                 "title": title,
                 "theme": theme,
-                "template": "trusted-offline-tasks-v1",
+                "template": "trusted-offline-" + kind + "-v1",
+                "kind": kind,
                 "status": "generated_unverified",
                 "files_sha256": hashes,
                 "test_evidence": "none_for_this_build",
