@@ -210,7 +210,6 @@ def dispatch(engine,args):
                 return {'status':'blocked','reason':'Pass --run for an explicitly approved local Docker experiment; no candidate executed','executed':False,'deployed':False}
             from .web_codegen import QuarantinedWebGenerator
             from .schema import strict_json
-            from pathlib import Path
             testpath=Path(args.checks)
             if testpath.is_symlink() or not testpath.is_file() or testpath.stat().st_size>8000:
                 raise PackageError('Browser acceptance checks file must be an ordinary short JSON file')
