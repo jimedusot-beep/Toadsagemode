@@ -67,7 +67,8 @@ class IndependentCalculatorProofTests(unittest.TestCase):
         self.assertEqual(
             [f["path"] for f in manifest["files"]],
             ["calculator.py", "tests/test_calculator_holdout.py"])
-        self.assertEqual(manifest["tests"], [{"kind": "unittest", "path": "tests"}])
+        self.assertEqual([(t["kind"], t["path"]) for t in manifest["tests"]],
+                         [("unittest", "tests")])
         self.assertNotEqual(
             next(f["content"] for f in self.candidate["manifest"]["files"]
                  if f["path"] == "tests/test_calculator.py"),
@@ -99,8 +100,8 @@ class IndependentCalculatorProofTests(unittest.TestCase):
 
     def test_missing_required_module_fails_closed(self):
         self.verify_fixture_with_double()
+        edited = copy.deepcopy(self.engine.get(self.candidate["id"]))
         with patch.object(self.engine, "get") as get:
-            edited = copy.deepcopy(self.candidate)
             edited["manifest"]["files"][0]["path"] = "another.py"
             get.return_value = edited
             with self.assertRaisesRegex(RuntimeError, "calculator.py"):
