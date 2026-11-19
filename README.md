@@ -2,7 +2,7 @@
 
 A local-first absorption inbox and Python development engine. Save ideas or source, inspect them without execution, and organize reusable candidates. Optional Ollama and a separately restricted Docker worker provide bounded Python project missions. The protected core is never rewritten by imported abilities.
 
-[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [First working app (App Studio)](docs/APP_STUDIO.md) · [AI app blueprint workflow](docs/AI_APP_BLUEPRINTS.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
+[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [First working app (App Studio)](docs/APP_STUDIO.md) · [AI app blueprint workflow](docs/AI_APP_BLUEPRINTS.md) · [Quarantined AI-written web app drafts](docs/WEB_CODE_QUARANTINE.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
 
 ## Next demonstration: empathy and personality learning
 
@@ -76,6 +76,25 @@ GitHub tests use model doubles, not real local Ollama inference. The existing
 Python-only Docker worker cannot execute generated JavaScript candidates;
 the templates are reviewed, fixed source. Nothing is automatically merged,
 activated or published.
+
+## AI-written web source proposals (quarantine only)
+
+The optional `app draft-code` command asks a **locally configured Ollama
+model** to propose an original static website as HTML, CSS and JavaScript.
+Those files are stored as private **JSON strings**, never extracted,
+executed, tested as browser code, or deployed. This is source generation
+without an execution or deployment permission grant:
+
+```sh
+python -m toad_core app draft-code "Make a simple offline flashcard game"
+python -m toad_core app code-report DRAFT_ID
+python -m toad_core app code-show DRAFT_ID
+```
+
+[Read the quarantine limits and release gates](docs/WEB_CODE_QUARANTINE.md).
+GitHub Actions uses explicit model doubles to validate this data-only
+pipeline. A real local model, isolated JavaScript test worker and
+human-authorized release process are **still outstanding**.
 
 ## Feed Toad on iPhone
 
