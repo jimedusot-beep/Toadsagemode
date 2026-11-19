@@ -52,7 +52,10 @@ class FreeStudioBundlesTests(unittest.TestCase):
                 self.assertIn("Toad Sage Flashcards",archive.read("index.html").decode())
             with zipfile.ZipFile(out / STUDIO_NAME) as archive:
                 self.assertEqual(set(archive.namelist()),
-                                 {"index.html","styles.css","app.js","templates.json","v2.css","v2.js"})
+                                 {"index.html","styles.css","app.js","templates.json","v2.css","v2.js","v3.css","v3.js"} |
+                                 {"previews/"+kind+"-"+theme+"/index.html"
+                                  for kind in ("tasks","notes","flashcards")
+                                  for theme in ("forest","midnight")})
                 self.assertIn("Free App Studio",archive.read("index.html").decode())
                 self.assertEqual(json.loads(archive.read("templates.json")),expected_catalog())
             self.assertEqual(
@@ -61,7 +64,10 @@ class FreeStudioBundlesTests(unittest.TestCase):
             )
             self.assertEqual(
                 {p.name for p in (out/"browser-studio").iterdir()},
-                {"index.html","styles.css","app.js","templates.json","v2.css","v2.js"}
+                {"index.html","styles.css","app.js","templates.json","v2.css","v2.js","v3.css","v3.js","previews"}
+            )
+            self.assertEqual(
+                len(list((out/"browser-studio"/"previews").glob("*/index.html"))), 6
             )
             self.assertEqual(
                 (out/"flashcards-site"/"index.html").read_bytes(),
