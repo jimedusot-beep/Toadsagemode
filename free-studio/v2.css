@@ -1,0 +1,36 @@
+/* Toad Sage App Studio V2: scoped *non-interactive* visual preview. */
+.preview-setting{max-width:220px}
+.preview-stage{background:repeating-linear-gradient(135deg,#101e17,#101e17 14px,#14241b 14px,#14241b 28px);border:1px solid #4c6856;border-radius:18px;padding:18px 10px;min-height:330px;display:flex;justify-content:center;align-items:flex-start}
+.device-preview{--mock-bg:#0d1712;--mock-fg:#eaf7ed;--mock-panel:#17291f;--mock-border:#365743;--mock-action:#b4ebbd;--mock-action-text:#0b2816;box-sizing:border-box;width:100%;max-width:360px;background:var(--mock-bg);color:var(--mock-fg);border:5px solid #6c8976;border-radius:27px;box-shadow:0 12px 40px #0008;padding:18px 14px;transition:max-width .15s ease;overflow-wrap:anywhere;min-height:345px}
+.device-preview[data-size="tablet"]{max-width:620px}
+.device-preview[data-theme="midnight"]{--mock-bg:#101321;--mock-fg:#e9edff;--mock-panel:#1b2135;--mock-border:#4b5b87;--mock-action:#abbcf8;--mock-action-text:#12192b;border-color:#6678ae}
+.mock-header{display:flex;align-items:center;gap:10px;margin-bottom:17px}
+.mock-icon{background:var(--mock-panel);padding:10px;border-radius:12px;font-size:1.35rem}
+.mock-brand{display:block;font-size:.54rem;color:var(--mock-action);font-weight:850;letter-spacing:.11em}
+.mock-header h3{font-size:clamp(1.15rem,3vw,1.6rem);line-height:1.2;margin:2px 0}
+.preview-content{border:1px solid var(--mock-border);background:var(--mock-panel);border-radius:14px;padding:17px 14px;min-height:200px}
+.preview-content h4{margin:0 0 12px;font-size:1rem}
+.mock-input{background:var(--mock-bg);border:1px solid var(--mock-border);border-radius:8px;padding:10px;margin:9px 0;color:var(--mock-fg);font-size:.82rem;min-height:38px}
+.mock-button{border-radius:8px;padding:10px 15px;background:var(--mock-action);color:var(--mock-action-text);font-weight:750;text-align:center;font-size:.84rem;margin-top:11px}
+.mock-list{padding:0;margin:11px 0;list-style:none}
+.mock-list li{margin:0;padding:10px 0;border-top:1px solid var(--mock-border);font-size:.85rem}
+.mock-muted{font-size:.78rem;color:#adbfaf}
+.device-preview[data-theme="midnight"] .mock-muted{color:#b3c1e6}
+.mock-flashcard{background:var(--mock-bg);border:1px solid var(--mock-border);border-radius:13px;padding:22px 10px;text-align:center;font-weight:750}
+.mock-flashcard small{display:block;font-weight:600;font-size:.67rem;letter-spacing:.1em;color:var(--mock-action);padding-bottom:8px}
+.mock-footer{display:block;text-align:center;margin-top:13px;font-size:.62rem;opacity:.75}
+button.secondary{background:#2a513a;color:#e4f6e8;padding:11px 18px;font-weight:750}
+#projects-status{margin:13px 0;color:#c0d5c5;font-size:.85rem;min-height:1.4em}
+#projects-status.error{color:#ffd0bd}
+#projects-status.success{color:#bdf4cc}
+#project-list{list-style:none;padding:0;margin:14px 0}
+.saved-project{border:1px solid #416c4e;border-radius:12px;padding:13px;margin:10px 0}
+.saved-project-info{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.saved-project strong{overflow-wrap:anywhere}
+.saved-project small{display:block;color:#bad3c1;margin-top:3px}
+.saved-project-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.saved-project-actions button{padding:8px 12px;min-height:40px;background:#315440;color:#f0fff2}
+.saved-project-actions button.danger{border-color:#c9a197;color:#ffe4db}
+#projects-empty{margin:12px 0}
+@media(max-width:500px){.preview-stage{padding:12px 5px}.device-preview{max-width:320px}.mock-header h3{font-size:1.15rem}}
+[hidden]{display:none!important}
