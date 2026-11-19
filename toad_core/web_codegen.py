@@ -152,7 +152,7 @@ class QuarantinedWebGenerator:
             ],
             "warning": "All produced source will be quarantined and unexecuted; any unsafe behavior will require independent review.",
         }
-        adapter = self.model if self.model is not None else OllamaAdapter()
+        adapter = self.model if self.model is not None else app_model()
         proposed = adapter.generate_json(
             json.dumps(task, ensure_ascii=False),
             purpose="draft untrusted static web app source for quarantine, not execution",
@@ -174,7 +174,8 @@ class QuarantinedWebGenerator:
             "draft_sha256": _digest(draft),
             "file_sha256": hashes,
             "risk_flags": flags,
-            "source": "loopback_ollama" if self.model is None else "injected_model_adapter",
+            "source": ("injected_model_adapter" if self.model is not None else
+                       ("openai_responses" if os.environ.get("TOAD_MODEL_PROVIDER") == "openai" else "loopback_ollama")),
             "status": "quarantined_unverified",
             "model_authored_code": True,
             "executed": False,
