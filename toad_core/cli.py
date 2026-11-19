@@ -48,6 +48,7 @@ def parser():
     new_app.add_argument('--theme',choices=['forest','midnight'],default='forest')
     new_app.add_argument('--kind',choices=['tasks','notes'],default='tasks')
     app_sub.add_parser('inspect',help='Read-only source integrity check').add_argument('name')
+    app_sub.add_parser('ai-status',help='Read configured app-model provider readiness without billable calls')
     app_sub.add_parser('propose',help='Ask configured loopback Ollama for a restricted app blueprint').add_argument('goal')
     app_sub.add_parser('plan',help='Read an AI blueprint before approval').add_argument('id')
     app_build=app_sub.add_parser('build',help='Build selected template only after human review')
@@ -171,6 +172,16 @@ def dispatch(engine,args):
             return studio.create(args.name,title=args.title,theme=args.theme,kind=args.kind)
         if args.action=='inspect':
             return studio.inspect(args.name)
+        if args.action=='ai-status':
+            from .cloud_models import OpenAIResponsesAdapter
+            provider=os.environ.get("TOAD_MODEL_PROVIDER","ollama")
+            if provider=="openai":
+                return OpenAIResponsesAdapter.readiness()
+            if provider=="ollama":
+                return {"provider":"ollama","configured":True,"connection_verified":False,
+                        "request_performed":False,"cloud_charges_possible":False,
+                        "note":"Use the existing model status command to probe local Ollama separately"}
+            raise PackageError("Unknown model provider")
         if args.action in ('draft-code','code-report','code-show'):
             from .web_codegen import QuarantinedWebGenerator
             generator=QuarantinedWebGenerator(engine.store.workspace)
