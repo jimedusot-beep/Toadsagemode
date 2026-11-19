@@ -33,11 +33,11 @@ Plain `--check` validates the static config without calling the CLI. With `--exp
    python3 tools/opencode_v2_starter.py --launch --expected-version 2.3.2 --model opencode/deepseek-v4.1-flash-free
    ```
 
-The starter creates an empty `/app` directory, fresh HOME/XDG directories, and launches private `opencode mini --standalone --model ...`. It does NOT preload the mission or acceptance files. Paste the approved requirements into OpenCode as text and keep independent tests outside its writable directory. The project is disposable but is **not an OS sandbox**; approved shell commands still carry host-user privileges.
+The starter creates an empty `/app` directory, fresh HOME/XDG directories, and launches private `opencode mini --standalone --model ...`. It preloads read-only copies of `CALCULATOR_MISSION.md` and `calculator-acceptance.test.mjs` and checks their SHA-256 hashes when the interactive process exits; this detects edits but is not an OS security boundary. **The separate** `calculator.acceptance.test.mjs` stays in the repository review checkout and is the stronger independent test. Ask OpenCode to follow the preloaded mission without changing either test. The project is disposable but is **not an OS sandbox**; approved shell commands still carry host-user privileges.
 
 5. Before sending any prompt, confirm OpenCode visibly selected `opencode/deepseek-v4.1-flash-free`. Official catalog currently lists this as free for a limited time, but free status can change. **Stay signed out of Console** and do not add provider API keys or payment methods. The CLI selects a reviewed candidate-free model and narrows providers, but cannot guarantee $0 if pricing changes or you manually switch to another model. Stop if free model is unavailable.
 
-6. Ask OpenCode to implement the preloaded mission. Do not modify the frozen acceptance test. Approve one comprehensible command/edit request at a time, never a standing blanket approval. When source files exist, run independently **from the review checkout** on a disposable test host (the runner imports untrusted code):
+6. Ask OpenCode to implement the preloaded mission. Do not modify either frozen acceptance test. Approve one comprehensible command/edit request at a time, never a standing blanket approval. When source files exist, run independently **from the review checkout** on a disposable test host (the runner imports untrusted code):
 
    ```sh
    TOAD_CALCULATOR_DIR=/absolute/path/printed/by/launcher/app \
@@ -54,7 +54,7 @@ Record the command, model and version, full stdout/stderr, exit code and generat
 - **Version:** exact 2.3.2 pin, checked using the actual CLI before launch; do not install `latest` as an uncontrolled runtime.
 - **Price:** the signed-out free model is the default and provider selection is restricted, but real no-charge proof requires an actual successful free model session and account/billing verification. Never submit private project data.
 - **Test evidence:** repository Python regression tests verify the starter, not actual OpenCode. Its GitHub workflow also attempts a pinned CLI version smoke but does not call a model. An agent-generated calculator, a real failed test, a real correction and a passing test are still unverified.
-- **Frozen inputs:** mission and independent acceptance tests stay in the review checkout, outside the agent's fresh writable `/app` directory. The current launcher does not hash or certify those inputs after the experiment; preserve their Git commit hashes for review.
+- **Frozen inputs:** the independent `calculator.acceptance.test.mjs` remains in the review checkout. The launcher also stages `CALCULATOR_MISSION.md` and `calculator-acceptance.test.mjs` into the agent workspace, prints a SHA-256 audit value and verifies those hashes after it exits. The agent can still access the in-workspace copies as the same OS user; the truly independent checkout test must be executed outside OpenCode's control.
 - **No automatic release:** GitHub PR creation, merging, deployments, production secrets and robot movement are outside the coding agent's first pilot.
 
 ## Official references
