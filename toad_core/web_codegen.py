@@ -1,6 +1,6 @@
 """Quarantined AI-authored static web source — DATA ONLY, never runnable here.
 
-The existing Ollama adapter may propose HTML/CSS/JS. This module validates
+A configured model adapter may propose HTML/CSS/JS (local default; cloud opt-in). This module validates
 a small manifest and stores raw strings in a private JSON record. It does NOT
 extract files, render a preview, invoke a browser, install or deploy anything.
 A future independent JavaScript worker and human release gate are required.
@@ -15,6 +15,7 @@ import re
 import uuid
 
 from .app_studio import _validate_name, _validate_title
+from .cloud_models import app_model
 from .models import ModelError, OllamaAdapter
 from .schema import PackageError, json_bytes, strict_json
 
@@ -152,7 +153,7 @@ class QuarantinedWebGenerator:
             ],
             "warning": "All produced source will be quarantined and unexecuted; any unsafe behavior will require independent review.",
         }
-        adapter = self.model if self.model is not None else OllamaAdapter()
+        adapter = self.model if self.model is not None else app_model()
         proposed = adapter.generate_json(
             json.dumps(task, ensure_ascii=False),
             purpose="draft untrusted static web app source for quarantine, not execution",
@@ -174,7 +175,8 @@ class QuarantinedWebGenerator:
             "draft_sha256": _digest(draft),
             "file_sha256": hashes,
             "risk_flags": flags,
-            "source": "loopback_ollama" if self.model is None else "injected_model_adapter",
+            "source": ("injected_model_adapter" if self.model is not None else
+                       ("openai_responses" if os.environ.get("TOAD_MODEL_PROVIDER") == "openai" else "loopback_ollama")),
             "status": "quarantined_unverified",
             "model_authored_code": True,
             "executed": False,

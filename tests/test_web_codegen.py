@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 from toad_core.models import ModelError
 from toad_core.schema import PackageError
@@ -49,6 +50,21 @@ class WebCodeDraftTests(unittest.TestCase):
     def model_generator(self, payload=None):
         m = ModelDouble(source() if payload is None else payload)
         return QuarantinedWebGenerator(self.workspace, model=m), m
+
+    def test_default_factory_selects_configured_provider_without_network_in_ci(self):
+        """Regression: the no-injected-model path must actually resolve app_model."""
+        simulated = ModelDouble(source())
+        with mock.patch("toad_core.web_codegen.app_model", return_value=simulated) as factory:
+            result = QuarantinedWebGenerator(self.workspace).propose(
+                "Build original HTML, CSS and JavaScript from a bounded goal"
+            )
+        factory.assert_called_once_with()
+        self.assertEqual(len(simulated.calls), 1)
+        self.assertEqual(result["status"], "quarantined_unverified")
+        self.assertTrue(result["model_authored_code"])
+        self.assertFalse(result["executed"])
+        self.assertFalse(result["tested"])
+        self.assertFalse(result["deployed"])
 
     def test_model_writes_source_as_data_only_and_no_web_files_are_extracted(self):
         engine, model = self.model_generator()
