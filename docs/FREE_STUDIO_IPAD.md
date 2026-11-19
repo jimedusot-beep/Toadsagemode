@@ -67,6 +67,17 @@ site does not load.
 - `free-app-artifacts.yml` uploads two separate root-level static ZIP
   archives; there is NO deploy step, Netlify token or API key.
 
+## V2 features
+
+The separate Free App Studio ZIP now includes an instant **non-executable
+design preview** (phone/tablet layout, app type, title and forest/midnight
+theme), plus browser-local project saving (up to 20 named projects).
+Users can load, revise and deliberately delete saved settings.
+See [V2 capabilities and safety boundaries](FREE_STUDIO_V2.md).
+
+Saving Studio settings is *not* saving the contents of generated Tasks,
+Notes or Flashcards apps; their local browser data remains distinct.
+
 ## Remaining limits
 
 This does not connect Toad Sage to a real code-writing model. Hosted
