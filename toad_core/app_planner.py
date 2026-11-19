@@ -1,6 +1,6 @@
 """Bounded AI app blueprint workflow: a model suggests data, never runnable code.
 
-The only production model is the existing loopback-only Ollama adapter.
+Uses a configured model adapter: loopback Ollama by default, opt-in cloud on server.
 Proposals are private, source-hashed, and require a separate human-approved
 build command. Browser apps use reviewed templates; AI never writes JS.
 """
