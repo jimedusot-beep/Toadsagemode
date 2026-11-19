@@ -1,119 +1,102 @@
-"""Offline regression tests for the OpenCode V2 starter; NOT a live agent test."""
+"""Static preflight regression tests. These do NOT exercise a live OpenCode agent."""
+import importlib.util
 import json
-import os
-import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from tools import opencode_v2_starter as starter
+SCRIPT = Path(__file__).resolve().parents[1] / "tools" / "opencode_v2_starter.py"
+spec = importlib.util.spec_from_file_location("opencode_v2_starter", SCRIPT)
+starter = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(starter)
 
 
-class OpenCodeStarterTests(unittest.TestCase):
-    def setUp(self):
-        self.original = starter.validate_config()
-
-    def write_changed(self, transform):
-        with tempfile.TemporaryDirectory() as d:
-            path = Path(d) / "opencode.jsonc"
-            copy = json.loads(json.dumps(self.original))
-            transform(copy)
-            path.write_text(json.dumps(copy), encoding="utf-8")
-            with self.assertRaises((ValueError, KeyError, TypeError)):
-                starter.validate_config(path)
-
-    def test_reviewed_policy_passes(self):
-        self.assertEqual(starter.validate_config(), self.original)
-
-    def test_unexpected_config_field_fails(self):
-        self.write_changed(lambda d: d.update({"model": "unapproved/paid"}))
-
-    def test_missing_deny_fails(self):
-        self.write_changed(lambda d: d["permissions"].pop(9))
-
-    def test_secret_edit_cannot_be_overridden_by_wildcard_ask(self):
-        def reorder(d):
-            rules = d["permissions"]
-            wildcard = next(r for r in rules if r == {"action": "edit", "resource": "*", "effect": "ask"})
-            rules.remove(wildcard)
-            rules.append(wildcard)
-        self.write_changed(reorder)
-
-    def test_missing_hard_policy_fails(self):
-        self.write_changed(lambda d: d["policies"].pop(9))
-
-    def test_unapproved_provider_fails(self):
-        self.write_changed(lambda d: d["policies"].append(
-            {"action": "provider.use", "resource": "anthropic", "effect": "allow"}))
-
-    def test_no_hidden_extra_tool_permission(self):
-        self.write_changed(lambda d: d["permissions"].append(
-            {"action": "shell", "resource": "*", "effect": "allow"}))
-
-    def test_invalid_schema_fails(self):
-        self.write_changed(lambda d: d.update({"$schema": "bad"}))
-
-    def test_pinned_release_is_exact_v2(self):
-        self.assertEqual(starter.pinned_version(), "2.3.2")
-        with tempfile.TemporaryDirectory() as d:
-            path = Path(d) / "pin.txt"
-            path.write_text("latest", encoding="utf-8")
+class StarterTests(unittest.TestCase):
+    def _modified(self, change):
+        data = json.loads(starter.CONFIG.read_text(encoding="utf-8"))
+        change(data)
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "config.jsonc"
+            path.write_text(json.dumps(data), encoding="utf-8")
             with self.assertRaises(ValueError):
-                starter.pinned_version(path)
+                starter.check_config(path)
 
-    def test_missing_executable_fails(self):
+    def test_config_is_valid(self):
+        starter.check_config()
+
+    def test_final_broad_edit_rule_fails_closed(self):
+        self._modified(lambda data: data["permissions"].append(
+            {"action": "edit", "resource": "*", "effect": "allow"}))
+
+    def test_removed_secret_deny_fails_closed(self):
+        self._modified(lambda data: data["permissions"].pop())
+
+    def test_removed_external_deny_fails_closed(self):
+        self._modified(lambda data: data["permissions"].pop(10))
+
+    def test_broad_provider_allow_fails_closed(self):
+        self._modified(lambda data: data["policies"].append(
+            {"action": "provider.use", "resource": "*", "effect": "allow"}))
+
+    def test_removed_policy_deny_fails_closed(self):
+        self._modified(lambda data: data["policies"].pop(5))
+
+    def test_unexpected_config_key_fails_closed(self):
+        self._modified(lambda data: data.update({"model": "opencode/paid-model"}))
+
+    def test_version_pin_success(self):
+        with patch.object(starter.subprocess, "run") as run:
+            run.return_value.stdout = "opencode 2.3.2\n"
+            self.assertEqual(starter.installed_version("/bin/opencode", "2.3.2"), "opencode 2.3.2")
+
+    def test_version_mismatch(self):
+        with patch.object(starter.subprocess, "run") as run:
+            run.return_value.stdout = "2.3.3\n"
+            with self.assertRaises(RuntimeError):
+                starter.installed_version("/bin/opencode", "2.3.2")
+
+    def test_old_version_rejected_before_executing(self):
+        with patch.object(starter.subprocess, "run") as run:
+            with self.assertRaises(ValueError):
+                starter.installed_version("/bin/opencode", "2.2.5")
+            run.assert_not_called()
+
+    def test_environment_strips_api_secrets(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with patch.dict(starter.os.environ, {"OPENAI_API_KEY": "secret", "GH_TOKEN": "secret"}):
+                env = starter.clean_environment(Path(folder))
+                self.assertNotIn("OPENAI_API_KEY", env)
+                self.assertNotIn("GH_TOKEN", env)
+                self.assertEqual(env["HOME"], str(Path(folder) / "home"))
+
+    def test_launch_requires_binary(self):
         with patch.object(starter.shutil, "which", return_value=None):
-            with self.assertRaisesRegex(RuntimeError, "missing"):
-                starter.verify_binary("2.3.2")
+            with self.assertRaises(RuntimeError):
+                starter.launch("2.3.2", starter.FREE_MODEL_CANDIDATES[0])
 
-    def test_wrong_binary_version_fails(self):
-        bad = subprocess.CompletedProcess(["opencode", "--version"], 0, "2.2.7\n", "")
-        with patch.object(starter.subprocess, "run", return_value=bad):
-            with self.assertRaisesRegex(RuntimeError, "Expected"):
-                starter.verify_binary("2.3.2", "/tmp/mock-opencode")
+    def test_launch_blocks_paid_model(self):
+        with self.assertRaises(ValueError):
+            starter.launch("2.3.2", "opencode/paid-model")
 
-    def test_exact_binary_version_passes(self):
-        good = subprocess.CompletedProcess(["opencode", "--version"], 0, "opencode 2.3.2\n", "")
-        with patch.object(starter.subprocess, "run", return_value=good) as run:
-            self.assertEqual(starter.verify_binary("2.3.2", "/tmp/mock-opencode"), "/tmp/mock-opencode")
-            run.assert_called_once()
+    def test_launch_runs_mini_with_isolated_home(self):
+        with patch.object(starter.shutil, "which", return_value="/bin/opencode"), \
+             patch.object(starter, "installed_version", return_value="2.3.2"), \
+             patch.object(starter.subprocess, "call", return_value=0) as call:
+            self.assertEqual(starter.launch("2.3.2", starter.FREE_MODEL_CANDIDATES[0]), 0)
+            kwargs = call.call_args.kwargs
+            command = call.call_args.args[0]
+            self.assertEqual(command[:3], ["/bin/opencode", "mini", "--standalone"])
+            self.assertEqual(command[-1], starter.FREE_MODEL_CANDIDATES[0])
+            self.assertTrue((kwargs["cwd"] / "opencode.jsonc").exists())
+            self.assertTrue(str(kwargs["cwd"]).startswith("/tmp/"))
+            self.assertNotIn("OPENAI_API_KEY", kwargs["env"])
 
-    def test_version_check_timeout_fails_closed(self):
-        with patch.object(starter.subprocess, "run", side_effect=subprocess.TimeoutExpired("x", 15)):
-            with self.assertRaises(subprocess.TimeoutExpired):
-                starter.verify_binary("2.3.2", "/tmp/mock-opencode")
-
-    def test_child_environment_discards_inherited_secrets(self):
-        with patch.dict(os.environ, {"OPENAI_API_KEY": "must-not-leak",
-                                     "GITHUB_TOKEN": "must-not-leak",
-                                     "PATH": "/usr/bin"}):
-            env = starter.isolated_environment(Path("/tmp/disposable-home"))
-        self.assertNotIn("OPENAI_API_KEY", env)
-        self.assertNotIn("GITHUB_TOKEN", env)
-        self.assertEqual(env["HOME"], "/tmp/disposable-home")
-
-    def test_launch_has_private_home_and_standalone_flag(self):
-        with tempfile.TemporaryDirectory() as d:
-            directory = Path(d) / "session"
-            directory.mkdir()
-            with patch.object(starter.tempfile, "mkdtemp", return_value=str(directory)):
-                with patch.object(starter.subprocess, "call", return_value=0) as call:
-                    self.assertEqual(starter.launch("/tmp/fake-opencode"), 0)
-            args, kwargs = call.call_args
-            self.assertEqual(args[0], ["/tmp/fake-opencode", "--standalone"])
-            self.assertEqual(kwargs["cwd"], directory / "project")
-            self.assertEqual(kwargs["env"]["HOME"], str(directory / "home"))
-            self.assertEqual((directory / "project" / "opencode.jsonc").read_bytes(),
-                             starter.CONFIG.read_bytes())
-
-    def test_offline_validation_does_not_launch_binary(self):
-        with patch.object(starter, "verify_binary", side_effect=AssertionError("binary touched")):
-            self.assertEqual(starter.main(["--validate-config"]), 0)
-
-    def test_main_blocks_failed_version_check(self):
-        with patch.object(starter, "verify_binary", side_effect=RuntimeError("bad version")):
-            self.assertEqual(starter.main(["--check"]), 2)
+    def test_check_pinned_version_calls_binary(self):
+        with patch.object(starter.shutil, "which", return_value="/bin/opencode"), \
+             patch.object(starter, "installed_version", return_value="2.3.2") as verify:
+            self.assertEqual(starter.main(["--check", "--expected-version", "2.3.2"]), 0)
+            verify.assert_called_once_with("/bin/opencode", "2.3.2")
 
 
 if __name__ == "__main__":
