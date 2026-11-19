@@ -127,7 +127,10 @@ function unzipStored(bytes) {
     assert.equal(JSON.parse(notes.get('build_report.json')).kind,'notes');
 
     await page.fill('#slug','../../bad');
-    assert.equal(await page.locator('#slug').evaluate(e=>e.validity.patternMismatch),true);
+    await page.getByRole('button',{name:'Prepare downloadable app ZIP'}).click();
+    await page.waitForFunction(() => document.querySelector('#status').classList.contains('error'),null,{timeout:7000});
+    assert.match(await page.locator('#status').innerText(),/App name must use/);
+    assert.equal(await page.locator('#download-link').isHidden(),true);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
     assert.deepEqual(errors,[]);
     assert.deepEqual(remote,[]);
