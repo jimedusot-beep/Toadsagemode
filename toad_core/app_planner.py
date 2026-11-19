@@ -45,7 +45,7 @@ def validate_blueprint(value):
         "summary": _short_text(value["summary"], limit=400, field="Summary"),
     }
     if spec["kind"] not in APP_KINDS:
-        raise PackageError("Only the reviewed tasks or notes app template is supported")
+        raise PackageError("Only the reviewed tasks, notes or flashcards app templates are supported")
     if spec["theme"] not in THEMES:
         raise PackageError("Only reviewed forest or midnight themes are supported")
     unmet = value["unmet_requirements"]
@@ -90,7 +90,7 @@ class AIAppPlanner:
                 "schema": SCHEMA,
                 "name": "lowercase URL-safe slug 2-40 chars",
                 "title": "short human-visible app name, <=80 characters",
-                "kind": "tasks or notes, no other values",
+                "kind": "tasks, notes or flashcards, no other values",
                 "theme": "forest or midnight",
                 "summary": "what the chosen template actually does, <=400 characters",
                 "unmet_requirements": "array of requirements the chosen template cannot meet; max 5",
@@ -98,6 +98,7 @@ class AIAppPlanner:
             "templates": {
                 "tasks": "Offline checklist: add, toggle complete, filter, delete, clear completed; browser-local data",
                 "notes": "Offline notebook: add, edit, search and delete notes; browser-local data",
+                "flashcards": "Offline study deck: add, edit, search, delete, flip, navigate and mark learned; browser-local data",
             },
             "rules": [
                 "Return one JSON object with exactly the seven required fields.",
