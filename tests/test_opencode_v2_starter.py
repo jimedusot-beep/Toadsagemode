@@ -43,6 +43,9 @@ class StarterTests(unittest.TestCase):
         self._modified(lambda data: data["policies"].pop(5))
 
     def test_unexpected_config_key_fails_closed(self):
+        self._modified(lambda data: data.update({"plugins": ["unapproved-plugin"]}))
+
+    def test_unapproved_paid_model_fails_closed(self):
         self._modified(lambda data: data.update({"model": "opencode/paid-model"}))
 
     def test_version_pin_success(self):
@@ -89,6 +92,8 @@ class StarterTests(unittest.TestCase):
             self.assertEqual(command[:3], ["/bin/opencode", "mini", "--standalone"])
             self.assertEqual(command[-1], starter.FREE_MODEL_CANDIDATES[0])
             self.assertTrue((kwargs["cwd"] / "opencode.jsonc").exists())
+            self.assertTrue((kwargs["cwd"] / "CALCULATOR_MISSION.md").exists())
+            self.assertTrue((kwargs["cwd"] / "calculator-acceptance.test.mjs").exists())
             self.assertTrue(str(kwargs["cwd"]).startswith("/tmp/"))
             self.assertNotIn("OPENAI_API_KEY", kwargs["env"])
 
