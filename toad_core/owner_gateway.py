@@ -17,6 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
 from .bridge import _same_origin
+from .engine import default_workspace
 from .schema import PackageError, strict_json
 from .web_codegen import MAX_REQUEST_BYTES, QuarantinedWebGenerator
 
@@ -47,7 +48,7 @@ class OwnerStudioHTTP(ThreadingHTTPServer):
                 any(ord(char) < 33 or ord(char) > 126 for char in owner_token):
             raise ValueError("Owner token must be a private printable 32+ character secret")
         self.owner_token = owner_token
-        self.workspace = workspace
+        self.workspace = Path(workspace).expanduser() if workspace is not None else default_workspace()
         self.model = model
         self.max_calls = max_calls
         self.used_calls = 0
