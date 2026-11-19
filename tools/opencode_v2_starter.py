@@ -94,7 +94,7 @@ def installed_version(executable: str, expected: str) -> str:
                               check=True, timeout=15)
     observed = response.stdout.strip()
     # Official distributions may prefix the version with the executable name.
-    parsed_version = observed.removeprefix("opencode ").strip()
+    parsed_version = observed.removeprefix("opencode ").removeprefix("v").strip()
     if parsed_version != expected:
         raise RuntimeError(f"OpenCode version mismatch: expected {expected}; found {observed!r}")
     return observed
