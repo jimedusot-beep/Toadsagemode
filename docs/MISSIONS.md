@@ -59,3 +59,34 @@ A completed mission requires an actual successful local Docker receipt for the c
 Live Docker and Ollama operation are blocked in this development host. End-to-end mission tests use explicit model/worker doubles; they demonstrate orchestration, checkpointing, repair, budgets and packaging, not the quality of any downloaded model or successful live containment. Large projects, third-party dependencies, non-Python execution, repository/document downloads, multi-user services, background scheduling and open-ended self-modification are not implemented. The core and policy remain outside candidates' authority.
 
 Reference: [Ollama generation API](https://docs.ollama.com/api/generate).
+
+
+## Independent calculator build proof (opt-in, owner reviewed)
+
+The existing `tools/calculator_demo.py` uses **Toad Sage MissionEngine directly**, not
+OpenCode or GitHub for code generation. Run `python tools/calculator_demo.py`
+for readiness metadata only. On a trusted provisioned local host, explicitly
+run `python tools/calculator_demo.py --run --workspace /private/toad-proof`.
+
+The `--run` path requires local Ollama, the restricted Docker worker, and
+a successful live nine-probe Docker containment check **before** model
+generation. The model is asked to create a standard-library-only
+`calculator.py` with add/subtract/multiply/divide. The generated project must
+pass its own declared tests. Next, the tool copies the generated source bytes
+unchanged into a separate candidate with trusted holdout tests from
+`toad_core.repair_demo.HOLDOUT_TESTS`. The generated test files are excluded
+from this second candidate. The separate holdout test must pass in Docker and
+produce a digest-matched receipt. Otherwise the proof command is blocked even
+if the original mission completed.
+
+A passing run writes `independent-proof.json` alongside the mission's project
+ZIP, report and guide. The proof includes two receipt identifiers, exact
+`calculator.py` source SHA-256, an observed Docker image ID, and the actual
+repair-attempt count (which can be zero). Success means **ready for owner
+review**, not installed, merged, or deployed. Tests cannot certify correctness
+or safety; independent reviewers should inspect source, test coverage,
+receipts and host containment. The other production files are unchanged.
+
+CI tests in `tests/test_independent_calculator_proof.py` use explicitly
+labelled worker doubles to validate these gates; they **cannot** establish
+live Ollama inference or Docker execution on a user-controlled machine.
