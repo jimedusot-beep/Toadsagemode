@@ -232,7 +232,8 @@
         projects=[];
         storageWritable=false;
         save.disabled=true;
-        notice(error.message||'Local project storage cannot be read. Existing data was not overwritten.','error');
+        notice('Saved project storage could not be read; existing data was not overwritten. '+
+          (error instanceof Error && error.message.includes('library') ? error.message : ''),'error');
       }
       pendingDelete=null;
       renderLibrary();
