@@ -68,7 +68,12 @@ function unzipStored(bytes) {
     await page.fill('#slug','physics-space');
     await page.check('input[value="flashcards"]');
     await page.getByRole('button',{name:'Prepare downloadable app ZIP'}).click();
-    await page.locator('#download-link').waitFor({state:'visible'});
+    await page.waitForFunction(() => {
+      const node=document.querySelector('#status');
+      return node.textContent.includes('ZIP prepared') || node.classList.contains('error');
+    },null,{timeout:7000});
+    assert.match(await page.locator('#status').innerText(),/ZIP prepared/);
+    await page.locator('#download-link').waitFor({state:'visible',timeout:3000});
     const event=page.waitForEvent('download');
     await page.getByRole('link',{name:'Download prepared ZIP'}).click();
     const download=await event;
@@ -91,7 +96,12 @@ function unzipStored(bytes) {
     await page.fill('#title','Daily Checklist');
     await page.fill('#slug','daily-checklist');
     await page.getByRole('button',{name:'Prepare downloadable app ZIP'}).click();
-    await page.locator('#download-link').waitFor({state:'visible'});
+    await page.waitForFunction(() => {
+      const node=document.querySelector('#status');
+      return node.textContent.includes('ZIP prepared') || node.classList.contains('error');
+    },null,{timeout:7000});
+    assert.match(await page.locator('#status').innerText(),/ZIP prepared/);
+    await page.locator('#download-link').waitFor({state:'visible',timeout:3000});
     const taskEvent=page.waitForEvent('download');
     await page.getByRole('link',{name:'Download prepared ZIP'}).click();
     const taskDownload=await taskEvent;
@@ -103,7 +113,12 @@ function unzipStored(bytes) {
     await page.check('input[value="notes"]');
     await page.fill('#slug','notes-01');
     await page.getByRole('button',{name:'Prepare downloadable app ZIP'}).click();
-    await page.locator('#download-link').waitFor({state:'visible'});
+    await page.waitForFunction(() => {
+      const node=document.querySelector('#status');
+      return node.textContent.includes('ZIP prepared') || node.classList.contains('error');
+    },null,{timeout:7000});
+    assert.match(await page.locator('#status').innerText(),/ZIP prepared/);
+    await page.locator('#download-link').waitFor({state:'visible',timeout:3000});
     const notesEvent=page.waitForEvent('download');
     await page.getByRole('link',{name:'Download prepared ZIP'}).click();
     const notesDownload=await notesEvent;
