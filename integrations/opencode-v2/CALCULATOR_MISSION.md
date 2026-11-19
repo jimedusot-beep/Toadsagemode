@@ -1,9 +1,28 @@
-# Mission A: First real calculator coding experiment
+# Mission A — first real OpenCode calculator build
 
-Status: FROZEN REQUIREMENTS ONLY. No OpenCode inference or app build is claimed.
+**Status: Requirements frozen before live inference; no AI app yet.**
 
-Create a dependency-free browser calculator in a disposable workspace with four files: index.html, styles.css, app.mjs, and calculator.mjs. The JavaScript module must export calculate(operation, first, second). Allowed operations: add, subtract, multiply, divide. Division by zero must throw RangeError. The page should provide labeled inputs, keyboard-operable buttons, and clear error feedback for invalid entries. Do not deploy, publish, connect paid services, or edit the acceptance test.
+Build a dependency-free browser calculator in a disposable project directory
+with four files: `index.html`, `styles.css`, `app.mjs`, and
+`calculator.mjs`. The pure JavaScript module must export
+`calculate(operation, first, second)`. Permitted operations are `add`,
+`subtract`, `multiply`, and `divide`. Division by zero throws
+`RangeError`. The page must have labeled numeric inputs, keyboard-operable
+buttons, visible feedback and clear error handling. No deployment, external
+library installation, network calls, credentials or paid model fallback.
 
-The independent acceptance file calculator-acceptance.test.mjs is copied into the working directory BEFORE prompting the coding agent. Execute using: node --test calculator-acceptance.test.mjs. It will initially fail because calculator.mjs is missing; the red state is expected. Require a real code-generation pass and a later successful run.
+The complete frozen requirements and authoritative independent tests are
+in [CALCULATOR_ACCEPTANCE.md](CALCULATOR_ACCEPTANCE.md) and
+[`calculator.acceptance.test.mjs`](calculator.acceptance.test.mjs).
 
-Record actual OpenCode executable version, free model ID/provider, full model response, the generated source files, test command, exit status, stdout/stderr, source diff, a supervised repair attempt with red→green evidence, and human approval. Node tests alone are not evidence that a browser interface is accessible; manually inspect keyboard operation and error messages.
+Keep reviewer acceptance tests **outside** the agent-writable project, and
+never permit the agent to change them. Before inference a red result due to
+missing app files is expected; after inference the same tests should pass.
+Run independently from the reviewer checkout with `TOAD_CALCULATOR_DIR`
+pointing to the agent-generated project, on a disposable isolated host.
+
+Record actual OpenCode version, chosen free model identifier, user-approved
+commands, response, source files, test stdout/stderr and status, a bounded
+supervised repair with real red-to-green evidence, and owner review.
+The tests do not fully validate keyboard usability; manual browser review
+is also necessary.
