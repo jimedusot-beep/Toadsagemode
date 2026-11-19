@@ -87,9 +87,48 @@ async function open(page,url) {
     assert.match(await page.locator('#projects-status').innerText(),/different app type/);
     assert.equal(await page.locator('#project-count').innerText(),'1 of 20');
     await page.check('input[value="notes"]');
+
+    // iPad backup must contain settings only, download locally, and restore additively.
+    await page.getByRole('button',{name:'Prepare project backup'}).click();
+    assert.match(await page.locator('#projects-status').innerText(),/Backup ready/);
+    const backupEvent=page.waitForEvent('download');
+    await page.getByRole('link',{name:'Download project backup'}).click();
+    const backup=await backupEvent;
+    assert.equal(backup.suggestedFilename(),'toad-sage-studio-projects-backup.json');
+    const backupBytes=fs.readFileSync(await backup.path());
+    const exported=JSON.parse(backupBytes.toString('utf8'));
+    assert.equal(exported.schema,'toad-studio-projects-v1');
+    assert.equal(exported.projects.length,1);
+    assert.deepEqual(Object.keys(exported.projects[0]).sort(),
+      ['kind','name','savedAt','theme','title']);
+    assert.equal(backupBytes.includes(Buffer.from('app.js')),false);
+
     await page.getByRole('button',{name:'Delete: college-notes'}).click();
     assert.equal(await page.locator('.saved-project').count(),1);
     assert.equal(await page.locator('#project-count').innerText(),'1 of 20');
+    await page.getByRole('button',{name:'Confirm delete: college-notes'}).click();
+    assert.equal(await page.locator('#project-count').innerText(),'0 of 20');
+    await page.setInputFiles('#backup-file',{
+      name:'studio-backup.json',mimeType:'application/json',buffer:backupBytes
+    });
+    await page.getByRole('button',{name:'Restore settings without overwriting'}).click();
+    assert.match(await page.locator('#projects-status').innerText(),/Restored 1 project/);
+    assert.equal(await page.locator('#project-count').innerText(),'1 of 20');
+
+    // A conflicting saved name cannot silently overwrite a newer local revision.
+    await page.getByRole('button',{name:'Load: college-notes'}).click();
+    await page.fill('#title','Updated Locally');
+    await page.getByRole('button',{name:'Save current project'}).click();
+    const beforeConflict=await page.evaluate(()=>
+      localStorage.getItem('toad-sage-free-studio-projects-v1'));
+    await page.setInputFiles('#backup-file',{
+      name:'studio-backup.json',mimeType:'application/json',buffer:backupBytes
+    });
+    await page.getByRole('button',{name:'Restore settings without overwriting'}).click();
+    assert.match(await page.locator('#projects-status').innerText(),/conflicts.*nothing was changed/);
+    assert.equal(await page.evaluate(()=>
+      localStorage.getItem('toad-sage-free-studio-projects-v1')),beforeConflict);
+    await page.getByRole('button',{name:'Delete: college-notes'}).click();
     await page.getByRole('button',{name:'Confirm delete: college-notes'}).click();
     assert.equal(await page.locator('#project-count').innerText(),'0 of 20');
     await page.reload();
@@ -106,6 +145,8 @@ async function open(page,url) {
     await broken.reload();
     assert.match(await broken.locator('#projects-status').innerText(),/not overwritten/);
     assert.equal(await broken.locator('#save-project').isDisabled(),true);
+    assert.equal(await broken.locator('#backup-projects').isDisabled(),true);
+    assert.equal(await broken.locator('#restore-projects').isDisabled(),true);
     assert.equal(await broken.evaluate(()=>localStorage.getItem('toad-sage-free-studio-projects-v1')),'{broken');
     await broken.fill('#title','Still able to preview');
     assert.equal(await broken.locator('#preview-title').innerText(),'Still able to preview');
