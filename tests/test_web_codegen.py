@@ -157,6 +157,32 @@ class WebCodeDraftTests(unittest.TestCase):
         with self.assertRaises(PackageError):
             QuarantinedWebGenerator(link).propose("Never follow symlinks")
 
+    def test_security_flags_and_release_authority_cannot_be_forged(self):
+        cases = [
+            ("risk_flags", []),
+            ("release_allowed", True),
+            ("deployed", True),
+            ("tested", True),
+            ("executed", True),
+            ("status", "verified"),
+            ("owner_review_required", False),
+        ]
+        for field, value in cases:
+            with self.subTest(field=field):
+                engine, _ = self.model_generator()
+                item = engine.propose("Build a small flashcard app")
+                path = self.workspace / "ai-web-drafts" / (item["id"] + ".json")
+                record = json.loads(path.read_text())
+                if field == "risk_flags":
+                    record["risk_flags"] = ["fabricated_safe"]
+                else:
+                    record[field] = value
+                path.write_text(json.dumps(record))
+                with self.assertRaises(PackageError):
+                    engine.review(item["id"])
+                with self.assertRaises(PackageError):
+                    engine.show(item["id"])
+
     def test_cli_code_report_bad_id_has_nonzero_exit(self):
         r = subprocess.run([
             sys.executable, "-m", "toad_core", "--workspace",
