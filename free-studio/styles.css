@@ -36,3 +36,6 @@ footer{font-size:.76rem;text-align:center;color:#a0bcaa;padding:15px 0}
 .skip{position:absolute;left:12px;top:-100px;padding:10px;background:#fff;color:#000;z-index:5}
 .skip:focus{top:12px}
 @media(max-width:500px){.shell{padding:17px 12px 35px}.panel{padding:20px 14px}.masthead{align-items:flex-start}}
+
+.download-link{display:block;text-align:center;margin:12px 0 4px;padding:13px 16px;border:1px solid #c8ecce;border-radius:12px;color:#092d19;background:#c1f3cd;font-weight:800;text-decoration:none;min-height:48px}
+[hidden]{display:none!important}
