@@ -54,6 +54,9 @@ def parser():
     app_build.add_argument('id')
     app_build.add_argument('--approve',action='store_true',help='Explicit human-reviewed build approval, not deployment')
     app_build.add_argument('--allow-partial',action='store_true',help='Accept explicitly listed missing features')
+    app_sub.add_parser('draft-code',help='Quarantine AI-written HTML/CSS/JS for review ONLY; no browser execution').add_argument('goal')
+    app_sub.add_parser('code-report',help='Show draft risk hints, digests and blocked release status').add_argument('id')
+    app_sub.add_parser('code-show',help='Show the untrusted source strings as JSON for owner review').add_argument('id')
     experiments=commands.add_parser('experiments',help='Read-only comparison of tested source revisions')
     comparisons=experiments.add_subparsers(dest='action',required=True)
     compare=comparisons.add_parser('compare',help='Compare two revisions with identical frozen tests and lab policy')
@@ -154,6 +157,14 @@ def dispatch(engine,args):
             return studio.create(args.name,title=args.title,theme=args.theme,kind=args.kind)
         if args.action=='inspect':
             return studio.inspect(args.name)
+        if args.action in ('draft-code','code-report','code-show'):
+            from .web_codegen import QuarantinedWebGenerator
+            generator=QuarantinedWebGenerator(engine.store.workspace)
+            if args.action=='draft-code':
+                return generator.propose(args.goal)
+            if args.action=='code-report':
+                return generator.review(args.id)
+            return generator.show(args.id)
         planner=AIAppPlanner(engine.store.workspace)
         if args.action=='propose':
             return planner.propose(args.goal)
