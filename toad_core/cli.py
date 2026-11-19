@@ -62,6 +62,15 @@ def parser():
     browser_test.add_argument('id')
     browser_test.add_argument('--checks',required=True,help='Independent reviewed JSON array of declarative checks')
     browser_test.add_argument('--run',action='store_true',help='Explicitly authorize candidate code execution INSIDE isolated Docker')
+    acceptance=app_sub.add_parser('freeze-tests',help='Save independent app acceptance checks BEFORE model generation')
+    acceptance.add_argument('goal',help='Human-authored project goal')
+    acceptance.add_argument('--checks',required=True,help='Operator-written short JSON array of declarative WebKit checks')
+    app_sub.add_parser('frozen-tests',help='Read original immutable acceptance plan').add_argument('id')
+    app_sub.add_parser('draft-with-tests',help='Generate quarantined web source against a PRE-EXISTING frozen plan').add_argument('id')
+    app_sub.add_parser('web-trial',help='Inspect stored original tests / source binding without execution').add_argument('id')
+    test_frozen=app_sub.add_parser('test-web-trial',help='Test original frozen checks against a quarantined candidate')
+    test_frozen.add_argument('id',help='Recorded trial ID')
+    test_frozen.add_argument('--run',action='store_true',help='Opt in to local Docker WebKit candidate execution')
     experiments=commands.add_parser('experiments',help='Read-only comparison of tested source revisions')
     comparisons=experiments.add_subparsers(dest='action',required=True)
     compare=comparisons.add_parser('compare',help='Compare two revisions with identical frozen tests and lab policy')
@@ -170,6 +179,26 @@ def dispatch(engine,args):
             if args.action=='code-report':
                 return generator.review(args.id)
             return generator.show(args.id)
+        if args.action in ('freeze-tests','frozen-tests','draft-with-tests','web-trial','test-web-trial'):
+            from .web_acceptance import FrozenWebAcceptance
+            from .web_lab import validate_checks
+            from .schema import strict_json
+            workflow=FrozenWebAcceptance(engine.store.workspace)
+            if args.action=='freeze-tests':
+                # Checks come from the operator-controlled file, never model
+                # output. This is called before any code-generation request.
+                checkfile=Path(args.checks)
+                if checkfile.is_symlink() or not checkfile.is_file() or checkfile.stat().st_size>8000:
+                    raise PackageError('Frozen tests must be a regular short JSON file')
+                checks=validate_checks(strict_json(checkfile.read_text(encoding='utf-8')))
+                return workflow.create_plan(args.goal,checks)
+            if args.action=='frozen-tests':
+                return workflow.plan(args.id)
+            if args.action=='draft-with-tests':
+                return workflow.draft(args.id)
+            if args.action=='web-trial':
+                return workflow.trial(args.id)
+            return workflow.test(args.id,run=args.run)
         if args.action in ('web-lab-status','browser-test'):
             from .web_lab import WebKitDockerWorker, validate_checks
             worker=WebKitDockerWorker()
@@ -181,7 +210,6 @@ def dispatch(engine,args):
                 return {'status':'blocked','reason':'Pass --run for an explicitly approved local Docker experiment; no candidate executed','executed':False,'deployed':False}
             from .web_codegen import QuarantinedWebGenerator
             from .schema import strict_json
-            from pathlib import Path
             testpath=Path(args.checks)
             if testpath.is_symlink() or not testpath.is_file() or testpath.stat().st_size>8000:
                 raise PackageError('Browser acceptance checks file must be an ordinary short JSON file')
