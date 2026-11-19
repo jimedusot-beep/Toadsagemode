@@ -34,3 +34,11 @@ button.secondary{background:#2a513a;color:#e4f6e8;padding:11px 18px;font-weight:
 #projects-empty{margin:12px 0}
 @media(max-width:500px){.preview-stage{padding:12px 5px}.device-preview{max-width:320px}.mock-header h3{font-size:1.15rem}}
 [hidden]{display:none!important}
+
+/* Offline backup uses the same accessible controls as the saved-project library. */
+.backup-controls{display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin-top:16px;padding:14px;border:1px solid #416c4e;border-radius:12px}
+.backup-controls label{font-weight:700}
+.backup-controls input[type="file"]{width:100%;max-width:100%;box-sizing:border-box;color:#edf8ef}
+.backup-controls small{color:#bad3c1;line-height:1.5}
+.backup-controls button:disabled{opacity:.55;cursor:not-allowed}
+.backup-controls .download-link{overflow-wrap:anywhere}
