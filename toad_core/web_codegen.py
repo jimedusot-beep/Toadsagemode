@@ -15,6 +15,7 @@ import re
 import uuid
 
 from .app_studio import _validate_name, _validate_title
+from .cloud_models import app_model
 from .models import ModelError, OllamaAdapter
 from .schema import PackageError, json_bytes, strict_json
 
