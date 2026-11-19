@@ -88,17 +88,17 @@ class AppStudio:
             "styles.css": css,
             "app.js": base_js,
             "README.md": (
-                "# Offline " + kind + " application\\n\\n"
-                "Built from a reviewed, versioned Toad Sage " + kind + " template.\\n"
-                "A browser stores this app's data locally under a distinct key.\\n"
+                "# Offline " + kind + " application\n\n"
+                "Built from a reviewed, versioned Toad Sage " + kind + " template.\n"
+                "A browser stores this app's data locally under a distinct key.\n"
                 "The notes app supports create/edit/search/delete; the tasks app supports "
-                "create/toggle/filter/delete/clear completed.\\n"
-                "Use a trusted local static server or Netlify preview for browser storage.\\n"
-                "Browser storage is not an encrypted backup or cross-device sync.\\n"
-                "Do not put secrets or client medical data into this demo.\\n"
-                "Review source and browser tests before any deployment.\\n"
+                "create/toggle/filter/delete/clear completed.\n"
+                "Use a trusted local static server or Netlify preview for browser storage.\n"
+                "Browser storage is not an encrypted backup or cross-device sync.\n"
+                "Do not put secrets or client medical data into this demo.\n"
+                "Review source and browser tests before any deployment.\n"
                 "No AI-authored executable source, Docker execution, installation or "
-                "deployment occurred during this build.\\n"
+                "deployment occurred during this build.\n"
             ),
         }
 
