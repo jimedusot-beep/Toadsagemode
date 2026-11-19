@@ -132,14 +132,14 @@ def launch(expected_version: str, model: str) -> int:
     # Acceptance inputs are written BEFORE any agent prompt; hashes detect
     # tampering after the interactive run. This is NOT same-user isolation.
     frozen = {}
-    for name in ("CALCULATOR_MISSION.md", "calculator-acceptance.test.mjs"):
+    for name in ("CALCULATOR_MISSION.md", "CALCULATOR_ACCEPTANCE.md"):
         source = ROOT / "integrations" / "opencode-v2" / name
         output = workspace / name
         payload = source.read_bytes()
         output.write_bytes(payload)
         output.chmod(0o444)
         frozen[name] = hashlib.sha256(payload).hexdigest()
-    print("Frozen test SHA256:", frozen["calculator-acceptance.test.mjs"], flush=True)
+    print("Frozen test SHA256:", frozen["CALCULATOR_ACCEPTANCE.md"], flush=True)
     env = clean_environment(root)
     print(f"Fresh experiment workspace: {workspace}", flush=True)
     print(f"Verified CLI version: {expected_version}; selected candidate model: {model}", flush=True)
