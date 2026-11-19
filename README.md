@@ -2,7 +2,7 @@
 
 A local-first absorption inbox and Python development engine. Save ideas or source, inspect them without execution, and organize reusable candidates. Optional Ollama and a separately restricted Docker worker provide bounded Python project missions. The protected core is never rewritten by imported abilities.
 
-[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [First working app (App Studio)](docs/APP_STUDIO.md) · [AI app blueprint workflow](docs/AI_APP_BLUEPRINTS.md) · [Quarantined AI-written web app drafts](docs/WEB_CODE_QUARANTINE.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
+[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [First working app (App Studio)](docs/APP_STUDIO.md) · [AI app blueprint workflow](docs/AI_APP_BLUEPRINTS.md) · [Quarantined AI-written web app drafts](docs/WEB_CODE_QUARANTINE.md) · [Isolated WebKit acceptance lab](docs/WEBKIT_LAB.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
 
 ## Next demonstration: empathy and personality learning
 
