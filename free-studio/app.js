@@ -213,8 +213,19 @@
       notice('Templates could not load. Open this site through a secure HTTPS static host.', 'error');
       return;
     }
+    const link=document.querySelector('#download-link');
+    let readyUrl=null;
+    function invalidateReadyDownload() {
+      link.hidden=true;
+      link.removeAttribute('download');
+      link.setAttribute('href','#');
+      if(readyUrl){URL.revokeObjectURL(readyUrl);readyUrl=null;}
+    }
+    form.addEventListener('input',invalidateReadyDownload);
+    form.addEventListener('change',invalidateReadyDownload);
     form.addEventListener('submit',async event=>{
       event.preventDefault();
+      invalidateReadyDownload();
       download.disabled=true;
       notice('Preparing your app locally…');
       try {
@@ -223,16 +234,12 @@
           kind,name:slug.value,title:title.value,theme:theme.value
         });
         const blob=new Blob([result.zip],{type:'application/zip'});
-        const href=URL.createObjectURL(blob);
-        const link=document.createElement('a');
-        link.href=href;link.download=result.report.name+'-toad-sage-app.zip';
-        document.body.append(link);
-        link.click();
-        link.remove();
-        // Revocation on the next interaction, not immediately, avoids a
-        // download race on mobile Safari without needing a timer.
-        download.addEventListener('click',()=>URL.revokeObjectURL(href),{once:true});
-        notice('ZIP prepared: '+result.report.title+' ('+result.zip.length+' bytes). Save it, then upload to Netlify Drop to test.', 'success');
+        readyUrl=URL.createObjectURL(blob);
+        link.href=readyUrl;
+        link.download=result.report.name+'-toad-sage-app.zip';
+        link.hidden=false;
+        notice('ZIP prepared: '+result.report.title+' ('+result.zip.length+
+          ' bytes). Tap Download prepared ZIP to save it, then upload to Netlify Drop.', 'success');
       } catch (error) {
         notice(error instanceof Error?error.message:'Could not create your app ZIP.', 'error');
       } finally {
