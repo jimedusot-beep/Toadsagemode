@@ -100,8 +100,7 @@ class IndependentCalculatorProofTests(unittest.TestCase):
     def test_missing_required_module_fails_closed(self):
         self.verify_fixture_with_double()
         with patch.object(self.engine, "get") as get:
-            record = self.engine.get(self.candidate["id"]) if False else self.candidate
-            edited = copy.deepcopy(record)
+            edited = copy.deepcopy(self.candidate)
             edited["manifest"]["files"][0]["path"] = "another.py"
             get.return_value = edited
             with self.assertRaisesRegex(RuntimeError, "calculator.py"):
