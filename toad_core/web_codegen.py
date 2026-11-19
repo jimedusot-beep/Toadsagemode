@@ -1,6 +1,6 @@
 """Quarantined AI-authored static web source — DATA ONLY, never runnable here.
 
-The existing Ollama adapter may propose HTML/CSS/JS. This module validates
+A configured model adapter may propose HTML/CSS/JS (local default; cloud opt-in). This module validates
 a small manifest and stores raw strings in a private JSON record. It does NOT
 extract files, render a preview, invoke a browser, install or deploy anything.
 A future independent JavaScript worker and human release gate are required.
