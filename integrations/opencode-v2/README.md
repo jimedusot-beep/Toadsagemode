@@ -1,151 +1,65 @@
-# Toad Sage × OpenCode V2 — supervised experiment
+# Toad Sage × OpenCode V2 — supervised calculator pilot
 
-**Status:** open draft PR; not merged, not deployed. This is a guarded launcher,
-an offline test suite, a reproducible CLI smoke job, and a frozen first-app
-contract. It does NOT show a real AI-generated application or active Toad Sage
-mission adapter yet.
+**State:** Draft PR #35; no agent inference, real calculator build, OS-level containment, or paid/free billing result is verified yet. Do not merge or deploy automatically.
 
-## Architecture
+## System design
 
-```text
-Owner / iPad
-     |
-Toad Sage requirements and human approval (no code execution in public UI)
-     |
-Disposable OS-isolated development host, no production secrets
-     |-- OpenCode V2.3.2 CLI in a private session
-     |       |-- selected free model (must verify live)
-     |       |-- edits and shell requests require review
-     |       '-- generated app in isolated project directory
-     |-- Independent frozen test runner (separate from agent workspace)
-     '-- logs / source diff / review, then optional PR with approval
-```
+Toad Sage (owner approvals, mission history) → frozen specification → OpenCode V2 in disposable cloud VM → candidate files → independent Node tests → reviewable evidence → separate draft PR. OpenCode never receives H.E.R.B.I.E. robot controls, production credentials, or unrestricted deployment rights.
 
-Toad Sage remains the product owner, planner and review/memory layer.
-OpenCode is the external code-writing agent. The separate worker is
-responsible for actual OS isolation. An isolated temporary folder and
-OpenCode permissions are NOT a security sandbox.
+Toad Sage retains mission planning, SQLite memory, and final review. OpenCode is only the external code-writing engine. An isolated testing worker and SDK adapter remain future work.
 
-## What is implemented in this branch
+## Exact first-run process from an iPad
 
-- `opencode.jsonc`: ordered V2 permissions with hard-deny policies,
-  restricted to the OpenCode provider and anonymous integration. Denies
-  external-directory tools, secret file access, configuration edits, push
-  and publishing commands. Requires approval for shell and edits. All unknown
-  tools are denied initially. The command policy is **not** a shell sandbox;
-  variants of commands and approved arbitrary programs can still access the
-  host. Strong host isolation is mandatory.
-- `version.txt`: the reproducible OpenCode CLI version `2.3.2`.
-- `tools/opencode_v2_starter.py`: exact local config verification, V2
-  version probe, standalone interactive launcher, and an isolated HOME/XDG
-  configuration. It does not install, make API calls or provision hosts.
-- `tests/test_opencode_v2_starter.py`: offline regression checks; mocks
-  do not prove live inference or security containment.
-- `CALCULATOR_ACCEPTANCE.md` and
-  `calculator.acceptance.test.mjs`: frozen calculator specifications
-  and independent Node acceptance checks, written **before** inference.
-- `.github/workflows/opencode-v2-starter.yml`: Python policy tests, Node
-  syntax check and pinned OpenCode CLI installation/version smoke. No model
-  prompt, no API key or deployment. Inspect CI runs for actual pass/fail.
-
-## First interactive test from iPad in a *disposable* Codespace
-
-1. Confirm GitHub Codespaces remaining free monthly allowance and spending
-   settings; choose the smallest 2-core machine. Do not enable paid overages.
-   Start a NEW Codespace from this PR's branch, not production. Codespaces
-   is a development host, **not** proof of isolation from GitHub credentials;
-   a truly strong adversarial code sandbox needs additional isolation.
-2. Ensure no H.E.R.B.I.E. private files, GitHub tokens, robot credentials or
-   paid-model keys are present. The launcher filters inherited environment
-   keys for OpenCode but cannot sanitize the entire host.
-3. In a terminal within the branch checkout, run:
+1. Open [Toadsagemode PR #35](https://github.com/jimedusot-beep/Toadsagemode/pull/35) and its branch `integration/opencode-v2-starter-20261119`. In GitHub, choose **Code → Codespaces** and create a small disposable Codespace on this branch. Verify monthly included usage and do not enable paid overages. This creates a cloud Linux workspace, not a process on the iPad.
+2. In its terminal, from the repository root, install the **pinned** OpenCode version. This installs a native executable and should run only on the disposable host:
 
    ```sh
    npm install -g @opencode/cli@2.3.2
+   ```
+
+3. Validate the exact reviewed config offline, execute the local Python regression tests, and check the actual installed binary:
+
+   ```sh
    python3 tools/opencode_v2_starter.py --validate-config
+   python3 -m unittest discover -s tests -p 'test_opencode_v2_starter.py' -v
    python3 tools/opencode_v2_starter.py --check
    ```
 
-   These commands check the pinned binary and policy, not actual AI use.
-   OpenCode's npm postinstall downloads/runs native code: only install in a
-   disposable host.
-4. On the same disposable host, launch interactively:
+`--validate-config` does **not** execute OpenCode. `--check` **does** run `opencode --version` and requires the exact version in `integrations/opencode-v2/version.txt` (currently 2.3.2). Passing local unit tests does not prove runtime policy enforcement.
+
+4. Launch the **interactive** V2 application:
 
    ```sh
    python3 tools/opencode_v2_starter.py --launch
    ```
 
-   The launcher prints a temporary `.../project` path. It creates an
-   isolated OpenCode home to avoid inherited API accounts. Choose a model
-   explicitly labeled **Free** in the currently displayed OpenCode model
-   list. Prefer synthetic data. Do **not** connect a payment method or paid
-   provider; disable auto-recharge and ensure no paid fallback.
-5. Submit this approved prompt:
+The starter creates an empty project, a fresh HOME with scrubbed environment variables, and a private `opencode --standalone` service. It preloads the frozen `CALCULATOR_MISSION.md` and `calculator-acceptance.test.mjs`. The project is disposable but is **not an OS sandbox**; approved shell commands still carry host-user privileges.
 
-   > Build a dependency-free four-operation calculator website in this
-   > empty project. Read the requirements I provide from CALCULATOR_ACCEPTANCE.
-   > Create index.html, styles.css and calculator.mjs. Export the pure
-   > calculate(a,b,operator) function. Ask before any shell command or
-   > edit. Do not deploy, publish, install dependencies, use external
-   > resources or change acceptance requirements.
+5. Before sending any prompt, confirm OpenCode visibly selected `opencode/deepseek-v4.1-flash-free`. Official catalog currently lists this as free for a limited time, but free status can change. **Stay signed out of Console** and do not add provider API keys or payment methods. The configuration defaults to one free model and narrows providers, but cannot guarantee $0 if you manually switch to another model. Stop if free model is unavailable.
 
-   Supply the short requirements from `CALCULATOR_ACCEPTANCE.md` as plain
-   text without giving the agent the separate test file or any external
-   file access. Approve only commands you inspect.
-6. Exit with Ctrl+C. Before copying any generated code into trusted
-   projects, run the independent acceptance test in the same
-   disposable host, replacing the placeholder with the launcher path:
+6. Ask OpenCode to implement the preloaded mission. Do not modify the frozen acceptance test. Approve one comprehensible command/edit request at a time, never a standing blanket approval. When source files exist, run independently in the experiment folder:
 
    ```sh
-   TOAD_CALCULATOR_DIR=/tmp/toad-opencode-v2-XXXXX/project \
-      node --test integrations/opencode-v2/calculator.acceptance.test.mjs
+   node --test calculator-acceptance.test.mjs
    ```
 
-   The test imports untrusted candidate code: do not run it on a personal
-   computer or a host containing production credentials. Record the
-   real exit code, captured output, file hashes and any failure details.
-7. If it fails, provide failure evidence and authorize at most TWO
-   supervised repair attempts. Rerun the exact same frozen tests.
-   Do not alter the tests to accommodate the candidate.
-8. Review source and test evidence; stop/delete the Codespace when finished
-   (GitHub Codespaces page > your codespace > ... > Delete). This also avoids
-   accumulating storage usage. Delete temporary source only after preserving
-   whatever non-sensitive evidence you want to keep.
+Record the command, model and version, full stdout/stderr, exit code and generated diff. Preserve a failing test and then one supervised repair with a passing retest. Manually check keyboard interaction and invalid-input messages in the browser. The frozen test intentionally fails when `calculator.mjs` does not yet exist.
 
-## Cost and privacy
+7. Exit OpenCode (Ctrl+C or normal exit), inspect logs and generated source, and only then decide whether to copy results into a feature branch for review. Delete the Codespace from https://github.com/codespaces after collecting evidence; its compute usage stops and storage eventually stops accruing after deletion.
 
-Current official OpenCode documentation lists some limited-time free
-models. Free availability can change and may depend on provider terms.
-**$0 model use has not been measured or proven here.** The OpenCode provider
-may also offer paid models. Never assume being connected to the provider
-means every available model is free. Confirm model label, usage and bill
-after any actual test.
+## Boundaries and evidence gates
 
-The configuration allows signed-out OpenCode access but does not guarantee
-that a specific free model is currently selectable. Do not add provider
-credentials or payment methods to this experiment.
+- **Permissions:** ordered V2 rules ask for shell/edit and deny unauthorized external paths and selected sensitive/destructive operations. Hard policies deny unrelated providers, integrations, plugins, MCP, web search and out-of-project access. Built-in shell checks remain best-effort and can be bypassed through commands the human approves; security requires OS isolation.
+- **Version:** exact 2.3.2 pin, checked using the actual CLI before launch; do not install `latest` as an uncontrolled runtime.
+- **Price:** the signed-out free model is the default and provider selection is restricted, but real no-charge proof requires an actual successful free model session and account/billing verification. Never submit private project data.
+- **Test evidence:** repository Python regression tests verify the starter, not actual OpenCode. Its new GitHub workflow runs only offline checks. An agent-generated calculator, a real failed test, a real correction and a passing test are still unverified.
+- **Frozen inputs:** mission and test are copied into the temporary workspace as read-only audit cues; the script hashes them after the agent exits and fails if modified. Read-only permissions and hashes cannot prevent same-UID command execution.
+- **No automatic release:** GitHub PR creation, merging, deployments, production secrets and robot movement are outside the coding agent's first pilot.
 
-See:
-- https://opencode.ai/docs/
-- https://opencode.ai/docs/permissions/
-- https://opencode.ai/docs/policies/
-- https://opencode.ai/docs/cli/
-- https://opencode.ai/docs/console/models
-- https://docs.github.com/en/billing/reference/product-usage-included
+## Official references
 
-## Evidence and stop conditions
-
-| Evidence | Current status |
-| --- | --- |
-| PR with version-pinned and reviewed config | Changes proposed here |
-| Python policy regression checks | New automated CI; inspect latest run |
-| Real OpenCode executable version on GitHub runner | CI smoke planned; inspect run |
-| Host isolation adequate for hostile code | Not validated |
-| Free model authenticated/used | Not verified |
-| Actual AI-created calculator | Not verified |
-| Independent calculator tests passing | Not verified |
-| Repair loop and runtime adapter | Not built |
-| GitHub merge, publishing or Herbie hardware access | Deliberately disabled |
-
-Never call a mocked response an AI model run. Never mark a job passed without
-actual receipts. Do not merge or deploy this experiment until reviewed.
+- [OpenCode install](https://opencode.ai/docs/) and [CLI standalone mode](https://opencode.ai/docs/cli/)
+- [V2 permission order](https://opencode.ai/docs/permissions/) and [hard policies](https://opencode.ai/docs/policies/)
+- [Free-model catalog and privacy terms](https://opencode.ai/docs/console/models/)
+- [SDK for later Toad Sage adapter](https://opencode.ai/docs/build/sdk/)
+- [Codespaces included usage](https://docs.github.com/en/codespaces/troubleshooting/troubleshooting-included-usage)
