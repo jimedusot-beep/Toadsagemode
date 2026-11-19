@@ -207,6 +207,16 @@ class QuarantinedWebGenerator:
         expected = {file["path"]: hashlib.sha256(file["content"].encode("utf-8")).hexdigest() for file in draft["files"]}
         if record.get("file_sha256") != expected:
             raise PackageError("Stored file digest mismatch")
+        if record.get("risk_flags") != scan_strings_only(draft):
+            raise PackageError("Stored security observations do not match source")
+        if record.get("status") != "quarantined_unverified":
+            raise PackageError("Stored draft status was modified")
+        for field in ("executed", "tested", "installed", "deployed", "release_allowed"):
+            if record.get(field) is not False:
+                raise PackageError("Stored draft authority field changed: " + field)
+        for field in ("owner_review_required", "model_authored_code"):
+            if record.get(field) is not True:
+                raise PackageError("Stored draft review boundary changed: " + field)
         return record
 
     def review(self, identifier):
