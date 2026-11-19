@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Toad Sage — Private AI Drafts</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">🐸 TOAD SAGE / OWNER ONLY</p>
+      <h1>AI Code Draft Lab</h1>
+      <p>Ask a configured coding model to propose original HTML, CSS and JavaScript. The source stays quarantined; nothing is run, installed or published.</p>
+      <p class="caution">Private HTTPS port only. Do not expose this server publicly or paste your owner token into a URL. AI and cloud compute availability are not assumed.</p>
+    </header>
+    <section aria-labelledby="draft-heading">
+      <h2 id="draft-heading">Create a source-only draft</h2>
+      <form id="draft-form">
+        <label for="token">Temporary owner token</label>
+        <input id="token" type="password" required autocomplete="off" spellcheck="false" placeholder="From the trusted cloud terminal">
+        <label for="goal">What should the app do?</label>
+        <textarea id="goal" rows="5" maxlength="2500" required placeholder="Build a small offline study planner with editable tasks and a progress counter."></textarea>
+        <div class="actions">
+          <button id="status-check" type="button">Check connection metadata</button>
+          <button id="generate" type="submit">Generate quarantined source</button>
+        </div>
+      </form>
+      <p id="result-status" role="status" aria-live="polite">No model request has been made.</p>
+    </section>
+    <section aria-labelledby="review-heading">
+      <h2 id="review-heading">Review an AI draft (never executed)</h2>
+      <p id="draft-summary">No draft selected. Passing checks on the host is not a claim of safe or working code.</p>
+      <div class="actions">
+        <button id="show-source" type="button" disabled>View source as text only</button>
+        <label for="source-file">Source file</label>
+        <select id="source-file" disabled>
+          <option value="index.html">index.html</option>
+          <option value="styles.css">styles.css</option>
+          <option value="app.js">app.js</option>
+        </select>
+      </div>
+      <pre id="source-text" tabindex="0" aria-label="Plain-text proposed source code"></pre>
+    </section>
+    <footer>One to three calls per server run · No paid calls without separate server-side opt-in · No arbitrary code execution · No deployment</footer>
+  </main>
+</body>
+</html>
