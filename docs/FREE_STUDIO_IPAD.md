@@ -78,6 +78,18 @@ See [V2 capabilities and safety boundaries](FREE_STUDIO_V2.md).
 Saving Studio settings is *not* saving the contents of generated Tasks,
 Notes or Flashcards apps; their local browser data remains distinct.
 
+## V3 — try functional app controls safely before downloading
+
+The new separate Free Studio ZIP also contains six prebuilt,
+interactive previews for reviewed Tasks, Notes and Flashcards templates.
+Try the actual form controls in the sandbox frame, then reset demo data.
+Nothing in this preview is saved permanently or published.
+The existing V2 visual-only design mock remains available separately,
+and it still reflects live title and theme choices.
+
+For the exact sandbox constraints and acceptance results, see
+[Studio V3 security and interactive preview](FREE_STUDIO_V3.md).
+
 ## Remaining limits
 
 This does not connect Toad Sage to a real code-writing model. Hosted
