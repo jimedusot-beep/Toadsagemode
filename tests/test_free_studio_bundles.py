@@ -55,6 +55,18 @@ class FreeStudioBundlesTests(unittest.TestCase):
                                  {"index.html","styles.css","app.js","templates.json"})
                 self.assertIn("Free App Studio",archive.read("index.html").decode())
                 self.assertEqual(json.loads(archive.read("templates.json")),expected_catalog())
+            self.assertEqual(
+                {p.name for p in (out/"flashcards-site").iterdir()},
+                {"index.html","styles.css","app.js","README.md","build_report.json"}
+            )
+            self.assertEqual(
+                {p.name for p in (out/"browser-studio").iterdir()},
+                {"index.html","styles.css","app.js","templates.json"}
+            )
+            self.assertEqual(
+                (out/"flashcards-site"/"index.html").read_bytes(),
+                zipfile.ZipFile(out / PREVIEW_NAME).read("index.html")
+            )
             metadata = json.loads((out/"artifact_report.json").read_text())
             self.assertEqual(metadata["artifacts"],result["artifacts"])
 
