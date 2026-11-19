@@ -3,7 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {
   KEY,SCHEMA,MAX_PROJECTS,validProject,parseProjects,makeRecord,
-  upsertProject,serializeProjects,describeKind
+  upsertProject,serializeProjects,mergeProjects,describeKind
 }=require('../../free-studio/v2.js');
 
 const when='2026-11-18T12:30:10.000Z';
@@ -65,4 +65,20 @@ test('project capacity is fixed at twenty and no code files are stored',()=>{
   assert.deepEqual(Object.keys(JSON.parse(snapshot)),['schema','projects']);
   assert.equal(snapshot.includes('app.js'),false);
   assert.equal(snapshot.includes('OPENAI_API_KEY'),false);
+});
+
+test('portable settings backup merge is additive, validated and conflict-safe',()=>{
+  const old=[record('study-cards')];
+  const restore=[record('extra-notes','notes')];
+  assert.deepEqual(mergeProjects(old,restore).map(x=>x.name),
+    ['extra-notes','study-cards']);
+  assert.deepEqual(mergeProjects(old,old),old);
+  const collided={...record('study-cards'),title:'Conflicting title'};
+  assert.throws(()=>mergeProjects(old,[collided]),/conflicts.*nothing was changed/);
+  assert.deepEqual(old,[record('study-cards')],'Merge must not mutate current library');
+  assert.throws(()=>mergeProjects(old,[{...restore[0],apiKey:'hidden'}]),/invalid/);
+  assert.throws(()=>mergeProjects(old,[restore[0],restore[0]]),/invalid/);
+  const full=Array.from({length:20},(_,i)=>record('project-'+i));
+  assert.throws(()=>mergeProjects(full,restore),/invalid|size limit/);
+  assert.deepEqual(parseProjects(serializeProjects(restore)),restore);
 });

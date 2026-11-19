@@ -109,3 +109,32 @@ before any merge.
 
 - [Netlify Drop quickstart — accepts folders or ZIP files](https://docs.netlify.com/start/quickstarts/netlify-drop-quickstart/)
 - [GitHub Actions artifact download](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts)
+
+
+## iPad-only project settings backup (review branch)
+
+The Free Studio now offers **Prepare project backup → Download project backup**
+and a separate **Restore settings without overwriting** flow. The backup is a
+small local JSON file (`toad-sage-studio-projects-backup.json`) that you can
+save to iPad Files or your own offline storage. No GitHub account, upload,
+API key, model or laptop is used by the browser export/import operation.
+
+- The backup contains only saved project names, titles, app kinds, themes
+  and timestamps. It **does not contain** source ZIPs, generated application
+  task/note/flashcard data, conversations, or a complete Git repository.
+- Restore is additive: exact duplicates are skipped, new project settings
+  are imported, conflicting project names are rejected **without changing
+  any current settings**. The 20-project and strict schema limits remain.
+- Invalid UTF-8, oversized JSON, unknown fields, duplicate names and
+  malformed backups are refused. Local storage quota failure does not
+  replace the prior project library. Corrupt unreadable local storage is
+  not silently cleared; preserve the raw browser data for separate
+  recovery before attempting an import.
+- Download is local and explicit. Import uses a file selected in iPad
+  Files; it never fetches remote URLs or executes code from the JSON.
+- Actual generated app ZIPs must still be separately downloaded and backed
+  up. A project settings JSON is **not a working app**.
+
+For the staging review, see the relevant draft PR's WebKit and Node
+regression checks. Only after owner approval and a separate release should
+these controls be described as available on a published Free Studio site.
