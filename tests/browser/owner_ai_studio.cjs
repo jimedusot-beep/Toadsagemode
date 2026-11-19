@@ -79,7 +79,7 @@ const server=http.createServer((req,res)=>{
     await page.getByRole('status').filter({hasText:'Quarantined source created'}).waitFor();
     assert.match(await page.locator('#draft-summary').innerText(),/quarantined_unverified/);
     await page.getByRole('button',{name:'View source as text only'}).click();
-    await page.locator('#source-file').waitFor({state:'enabled'});
+    await page.waitForFunction(()=>!document.querySelector('#source-file').disabled);
     assert.match(await page.locator('#source-text').innerText(),/<img src=x onerror=/);
     assert.equal(await page.locator('#source-text img').count(),0);
     assert.equal(await page.evaluate(()=>Boolean(window.generatedRan)),false);
