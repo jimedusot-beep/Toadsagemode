@@ -1,0 +1,54 @@
+name: OpenCode V2 starter validation
+
+on:
+  pull_request:
+    paths:
+      - "integrations/opencode-v2/**"
+      - "tools/opencode_v2_starter.py"
+      - "tests/test_opencode_v2_starter.py"
+      - ".github/workflows/opencode-v2-starter.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  policy-and-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Syntax and policy
+        run: |
+          python -m py_compile tools/opencode_v2_starter.py tests/test_opencode_v2_starter.py
+          python tools/opencode_v2_starter.py --validate-config
+      - name: Offline regression tests (not live model evidence)
+        run: python -m unittest discover -s tests -p test_opencode_v2_starter.py -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Acceptance harness syntax
+        run: node --check integrations/opencode-v2/calculator.acceptance.test.mjs
+
+  pinned-cli-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install isolated official CLI pin (NO model calls)
+        run: npm install -g @opencode/cli@2.3.2
+      - name: Verify actual installed CLI version
+        run: python tools/opencode_v2_starter.py --check
