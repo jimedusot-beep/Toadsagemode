@@ -1,53 +1,58 @@
 # Frozen acceptance contract — Calculator Mission 001
 
-Status: **test contract frozen before the first live OpenCode model run**.
-These are independent checks, not evidence the agent has succeeded.
+**Status: agreed contract, set before any real OpenCode inference.**
+Canonical task summary: [CALCULATOR_MISSION.md](CALCULATOR_MISSION.md).
+This document adds edge cases and independent verification requirements.
 
 ## Approved mission
 
-Build an original, dependency-free, accessible four-operation calculator web app
-in an otherwise empty disposable project folder. No publishing, network libraries,
-paid models, package installation, secrets, or changes to this acceptance contract.
+Build an original, dependency-free, keyboard-accessible, four-operation
+calculator website in a disposable workspace. No network libraries,
+secret reads, paid models or publishing.
 
-Required output:
-- `index.html`: numeric inputs, four operation controls, visible result/error region;
-  link to `styles.css` and a module script `calculator.mjs`.
-- `styles.css`: readable, responsive, keyboard-visible controls.
-- `calculator.mjs`: export pure function `calculate(a, b, operator)`; also attach
-  browser event handlers without relying on browser globals when imported by Node.
+Exactly four generated files (additional test files are optional):
+- `index.html`: labeled numeric inputs, four operation buttons, a visible
+  result/error area; links `styles.css` and a `type="module"` `app.mjs`.
+- `styles.css`: readable, responsive, keyboard focus cues.
+- `app.mjs`: browser event-handling code; imports `calculate` from `calculator.mjs`.
+- `calculator.mjs`: pure module exporting
+  `calculate(operation, first, second)` with no reliance on browser globals.
 
-API contract:
-1. Numeric `a` and `b` must both be finite numbers (reject NaN, Infinity and strings).
-2. Operator is exactly `+`, `-`, `*`, or `/`.
-3. `calculate(2, 3, "+") === 5`.
-4. `calculate(8, 3, "-") === 5`.
-5. `calculate(7, 6, "*") === 42`.
-6. `calculate(12, 4, "/") === 3`.
-7. Negative and decimal values work.
-8. Division by zero throws `RangeError` (not Infinity or NaN).
-9. Unknown operations throw `RangeError`.
-10. Non-finite/non-number operands throw `TypeError`.
-11. HTML must not use inline JavaScript or `eval`; UI must display errors, not crash.
-12. No external resources, libraries, telemetry or publishing endpoints.
+## API and results
 
-The independent test file is
-`integrations/opencode-v2/calculator.acceptance.test.mjs`.
-Run ONLY on the disposable host, from the reviewer checkout:
+1. Operations are EXACTLY `add`, `subtract`, `multiply`, `divide`.
+2. Both numeric operands must be finite JavaScript numbers; reject NaN,
+   infinity, strings, undefined and null with `TypeError`.
+3. `calculate("add", 7, 5) === 12`.
+4. `calculate("subtract", 7, 5) === 2`.
+5. `calculate("multiply", 7, 5) === 35`.
+6. `calculate("divide", 7, 2) === 3.5`.
+7. Negative numbers and decimals work.
+8. Divide by zero throws `RangeError`.
+9. Unknown operation throws `RangeError`.
+10. `index.html` uses external module script and CSS; no inline event
+    handlers, `eval`, CDN, telemetry, network dependency or publish action.
+11. UI should display errors clearly and not expose unescaped input as HTML.
+
+The **authoritative independent test suite** is
+`calculator.acceptance.test.mjs` (with a dot). It lives OUTSIDE the
+agent's workspace, and must not be modified by the agent. A separate
+`calculator-acceptance.test.mjs` (hyphen, earlier proposal) may also exist
+in the review branch; DO NOT copy it to the project or use it for certification.
+Only the dotted test suite implements this full contract.
+
+Use the reviewer checkout, on the same disposable isolated test host:
 
 ```sh
-TOAD_CALCULATOR_DIR=/absolute/path/to/agent/project \
+TOAD_CALCULATOR_DIR=/absolute/path/to/project \
   node --test integrations/opencode-v2/calculator.acceptance.test.mjs
 ```
 
-Security note: imported candidate JavaScript can execute arbitrary Node code even
-during tests. A successful test run is **not proof of containment**. Keep the whole
-reviewer test process inside an OS-isolated disposable host with no secrets.
-Do not copy or allow edits to the original acceptance tests inside the agent folder.
+The test imports untrusted generated JavaScript. Running Node tests on a
+host with sensitive files is unsafe; an OpenCode permission config does not
+contain Node execution.
 
-## Evidence record
-
-Record OpenCode binary version, model/provider and free-price check, commands,
-test stdout/stderr and exit status, generated file hashes, source diff,
-manual review findings, repair attempt count, charges checked and reviewer
-approval. Do not mark this milestone complete without a real model response,
-real generated source and executed independent test results.
+Record exact model ID, price status, CLI version, model response, generated
+source, exit status/test stdout, file hashes, diff and manual UI review.
+When tests fail, authorize at most two supervised repair attempts with the
+same frozen tests. No passing simulated response or mock-only check counts.
