@@ -30,7 +30,7 @@ Toad Sage retains mission planning, SQLite memory, and final review. OpenCode is
 4. Launch the **interactive** V2 application:
 
    ```sh
-   python3 tools/opencode_v2_starter.py --launch
+   python3 tools/opencode_v2_starter.py --launch --expected-version 2.3.2 --model opencode/deepseek-v4.1-flash-free
    ```
 
 The starter creates an empty project, a fresh HOME with scrubbed environment variables, and a private `opencode --standalone` service. It preloads the frozen `CALCULATOR_MISSION.md` and `calculator-acceptance.test.mjs`. The project is disposable but is **not an OS sandbox**; approved shell commands still carry host-user privileges.
@@ -63,3 +63,12 @@ Record the command, model and version, full stdout/stderr, exit code and generat
 - [Free-model catalog and privacy terms](https://opencode.ai/docs/console/models/)
 - [SDK for later Toad Sage adapter](https://opencode.ai/docs/build/sdk/)
 - [Codespaces included usage](https://docs.github.com/en/codespaces/troubleshooting/troubleshooting-included-usage)
+
+## Reconciliation note (2026-11-19)
+
+The frozen calculator contract uses **calculate(operation, first, second)**
+with four required generated files: index.html, styles.css, app.mjs and
+calculator.mjs. The independent dotted test suite has been corrected to match.
+Mock fixture tests are not evidence that OpenCode generated an app. The
+launcher requires exact `--expected-version` and `--model` arguments and has
+no live model result yet. Do not merge or deploy without runtime evidence.
