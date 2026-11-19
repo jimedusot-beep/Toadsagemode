@@ -120,11 +120,11 @@ def make_preview_html(kind: str, theme: str) -> str:
         raise ValueError("Reviewed document body anchor has changed")
     page = page.replace(
         "</body>",
-        "<script>\\n" + IN_MEMORY_STORAGE + "\\n" + script + "\\n" +
-        TITLE_BRIDGE + "\\n</script>\\n</body>", 1
+        "<script>\n" + IN_MEMORY_STORAGE + "\n" + script + "\n" +
+        TITLE_BRIDGE + "\n</script>\n</body>", 1
     )
     page = page.replace(
-        "<body data-theme=", "<body data-preview-sandbox=\\"reviewed-template-v1\\" data-theme="
+        "<body data-theme=", '<body data-preview-sandbox="reviewed-template-v1" data-theme='
     )
     marker = '<div class="shell">'
     if page.count(marker) != 1:
