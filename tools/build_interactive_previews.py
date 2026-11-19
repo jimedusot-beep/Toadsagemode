@@ -112,13 +112,19 @@ def make_preview_html(kind: str, theme: str) -> str:
         '<link rel="stylesheet" href="styles.css">',
         "<style>\n" + style + BANNER_CSS + "\n</style>"
     )
+    # Reviewed script was previously deferred. Inline scripts cannot use
+    # defer, so preserve the same DOM-ready ordering by moving it to the
+    # very end of the body, AFTER all required form controls exist.
+    page = page.replace('<script src="app.js" defer></script>', '')
+    if page.count("</body>") != 1:
+        raise ValueError("Reviewed document body anchor has changed")
     page = page.replace(
-        '<script src="app.js" defer></script>',
-        "<script>\n" + IN_MEMORY_STORAGE + "\n" + script + "\n" +
-        TITLE_BRIDGE + "\n</script>"
+        "</body>",
+        "<script>\\n" + IN_MEMORY_STORAGE + "\\n" + script + "\\n" +
+        TITLE_BRIDGE + "\\n</script>\\n</body>", 1
     )
     page = page.replace(
-        "<body data-theme=", "<body data-preview-sandbox=\"reviewed-template-v1\" data-theme="
+        "<body data-theme=", "<body data-preview-sandbox=\\"reviewed-template-v1\\" data-theme="
     )
     marker = '<div class="shell">'
     if page.count(marker) != 1:
