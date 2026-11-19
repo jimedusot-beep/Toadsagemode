@@ -1,0 +1,23 @@
+name: OpenCode V2 starter offline checks
+on:
+  pull_request:
+    paths:
+      - 'integrations/opencode-v2/**'
+      - 'tools/opencode_v2_starter.py'
+      - 'tests/test_opencode_v2_starter.py'
+      - '.github/workflows/opencode-starter.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run offline regression tests
+        run: python3 -m unittest discover -s tests -p 'test_opencode_v2_starter.py' -v
+      - name: Check policy and pinned V2 release without installing OpenCode
+        run: python3 tools/opencode_v2_starter.py --check
