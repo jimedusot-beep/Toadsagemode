@@ -90,6 +90,23 @@ def build(out=ARTIFACT_DIR):
     with zipfile.ZipFile(bundle) as archive:
         if archive.namelist() != list(STUDIO_FILES):
             raise ValueError("Browser studio bundle names are invalid")
+
+    # Source-only folders are uploaded to GitHub Actions as a single
+    # ready-to-upload outer ZIP per app; avoid confusing ZIP-in-ZIP downloads
+    # on mobile Safari, and do not modify any existing Netlify project.
+    flash_folder = out / "flashcards-site"
+    studio_folder = out / "browser-studio"
+    for folder in (flash_folder, studio_folder):
+        if folder.is_symlink():
+            raise ValueError("Refuse linked static artifact output")
+        if folder.exists():
+            shutil.rmtree(folder)
+        folder.mkdir(mode=0o700, parents=True)
+    with zipfile.ZipFile(preview) as archive:
+        for name in ("index.html", "styles.css", "app.js", "README.md", "build_report.json"):
+            (flash_folder / name).write_bytes(archive.read(name))
+    for name in STUDIO_FILES:
+        shutil.copyfile(STUDIO_DIR / name, studio_folder / name)
     results = {
         "schema": "toad-static-preview-artifacts-v1",
         "model_called": False,
