@@ -67,8 +67,10 @@ function unzipStored(bytes) {
     await page.fill('#title','Physics & <Space>');
     await page.fill('#slug','physics-space');
     await page.check('input[value="flashcards"]');
-    const event=page.waitForEvent('download');
     await page.getByRole('button',{name:'Prepare downloadable app ZIP'}).click();
+    await page.locator('#download-link').waitFor({state:'visible'});
+    const event=page.waitForEvent('download');
+    await page.getByRole('link',{name:'Download prepared ZIP'}).click();
     const download=await event;
     assert.equal(download.suggestedFilename(),'physics-space-toad-sage-app.zip');
     const files=unzipStored(fs.readFileSync(await download.path()));
@@ -88,8 +90,10 @@ function unzipStored(bytes) {
     await page.check('input[value="tasks"]');
     await page.fill('#title','Daily Checklist');
     await page.fill('#slug','daily-checklist');
-    const taskEvent=page.waitForEvent('download');
     await page.getByRole('button',{name:'Prepare downloadable app ZIP'}).click();
+    await page.locator('#download-link').waitFor({state:'visible'});
+    const taskEvent=page.waitForEvent('download');
+    await page.getByRole('link',{name:'Download prepared ZIP'}).click();
     const taskDownload=await taskEvent;
     const tasks=unzipStored(fs.readFileSync(await taskDownload.path()));
     assert(tasks.get('app.js').includes("const KEY = 'toad-sage-tasks-v1:daily-checklist';"));
@@ -98,8 +102,10 @@ function unzipStored(bytes) {
 
     await page.check('input[value="notes"]');
     await page.fill('#slug','notes-01');
-    const notesEvent=page.waitForEvent('download');
     await page.getByRole('button',{name:'Prepare downloadable app ZIP'}).click();
+    await page.locator('#download-link').waitFor({state:'visible'});
+    const notesEvent=page.waitForEvent('download');
+    await page.getByRole('link',{name:'Download prepared ZIP'}).click();
     const notesDownload=await notesEvent;
     const notes=unzipStored(fs.readFileSync(await notesDownload.path()));
     assert(notes.get('app.js').includes('toad-sage-notes-v1:notes-01'));
