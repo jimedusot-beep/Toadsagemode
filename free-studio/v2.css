@@ -42,3 +42,12 @@ button.secondary{background:#2a513a;color:#e4f6e8;padding:11px 18px;font-weight:
 .backup-controls small{color:#bad3c1;line-height:1.5}
 .backup-controls button:disabled{opacity:.55;cursor:not-allowed}
 .backup-controls .download-link{overflow-wrap:anywhere}
+
+/* iPad Files source-only ZIP review: never previews or runs uploaded code. */
+.zip-review-controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px;border:1px solid #416c4e;border-radius:12px}
+.zip-review-controls label{width:100%;font-weight:700}
+.zip-review-controls input[type="file"]{min-width:0;max-width:100%;color:#edf8ef}
+.zip-review-controls button:disabled{opacity:.55;cursor:not-allowed}
+#verify-status{overflow-wrap:anywhere;margin-top:12px;font-size:.86rem;color:#c0d5c5}
+#verify-status.success{color:#bdf4cc}
+#verify-status.error{color:#ffd0bd}
