@@ -181,7 +181,10 @@ def serve(workspace=None, port=8766, *, owner_token=None, max_calls=1):
     try:
         print("Toad owner AI drafts listening on 127.0.0.1:" + str(host.server_port), flush=True)
         print("Use PRIVATE HTTPS forwarded port only; never expose this directly.", flush=True)
-        print("Owner token (keep off websites and GitHub): " + host.owner_token, flush=True)
+        if owner_token is None:
+            print("Generated owner token (keep private): " + host.owner_token, flush=True)
+        else:
+            print("Owner token loaded from trusted server configuration (not displayed).", flush=True)
         print("Model calls allowed this run: " + str(host.max_calls), flush=True)
         host.serve_forever()
     finally:
