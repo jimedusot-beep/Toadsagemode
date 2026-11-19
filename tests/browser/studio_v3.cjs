@@ -94,7 +94,13 @@ const server=http.createServer((req,res)=>{
     assert.equal(await frame.locator('h1 img').count(),0);
 
     // A fresh iframe has no data, and cannot read anything from the host page.
-    await page.getByRole('button',{name:'Reset preview data'}).click();
+    await Promise.all([
+      page.waitForEvent('framenavigated',{
+        predicate:target=>target.url().includes('/previews/flashcards-forest/index.html'),
+        timeout:12000
+      }),
+      page.getByRole('button',{name:'Reset preview data'}).click()
+    ]);
     await frame.locator('#card-form').waitFor({state:'visible'});
     assert.equal(await frame.locator('#card-list .card-row').count(),0);
     assert.equal(await frame.locator('#progress').innerText(),'0 of 0 learned');
@@ -124,7 +130,13 @@ const server=http.createServer((req,res)=>{
     await page.getByRole('button',{name:'Save current project'}).click();
     assert.equal(await page.locator('#project-count').innerText(),'1 of 20');
     assert.equal(await frame.locator('.note').count(),1);
-    await page.getByRole('button',{name:'Reset preview data'}).click();
+    await Promise.all([
+      page.waitForEvent('framenavigated',{
+        predicate:target=>target.url().includes('/previews/notes-midnight/index.html'),
+        timeout:12000
+      }),
+      page.getByRole('button',{name:'Reset preview data'}).click()
+    ]);
     await frame.locator('#note-form').waitFor({state:'visible'});
     assert.equal(await frame.locator('.note').count(),0);
     assert.equal(await page.locator('#project-count').innerText(),'1 of 20');
