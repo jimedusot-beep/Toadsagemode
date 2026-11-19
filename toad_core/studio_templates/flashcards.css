@@ -1,0 +1,25 @@
+
+input[type=search],textarea{width:100%;min-width:0;border:1px solid #83a68e;background:#0c1911;color:inherit;border-radius:11px;padding:12px;font:inherit;font-size:16px}
+textarea{resize:vertical;min-height:90px}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #ffd485;outline-offset:3px}
+.action-row{margin-top:12px}
+.flashcard{width:100%;min-height:220px;background:#254632;border:2px solid #9bc7a5;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:24px;white-space:normal}
+body[data-theme="midnight"] .flashcard{background:#293454;border-color:#a9bbf2}
+.face-label{font-size:.7rem;font-weight:850;letter-spacing:.15em;color:#c6dccd}
+.face-text{font-size:clamp(1.15rem,4vw,1.65rem);font-weight:650;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+.flip-hint{font-size:.78rem;color:#d6e9dc}
+.study-position{margin:0 0 12px;text-align:center;color:#bdcfbf}
+.nav-row{margin:12px 0}
+.nav-row>*{flex:1}
+#learned-card{display:block;width:100%;border-color:#90bd99}
+#learned-card[aria-pressed=true]{background:#426d55;border-color:#c0efc8;font-weight:750}
+#card-list{list-style:none;padding:0;margin:0}
+.card-row{padding:14px 0;border-top:1px solid #3c5b46;overflow-wrap:anywhere}
+.card-row h3{font-size:1rem;margin:0 0 6px}
+.card-row p{white-space:pre-wrap;margin:0 0 10px;overflow-wrap:anywhere;color:#c2d9ca}
+.card-status{font-size:.76rem;font-weight:750;color:#c9efce}
+.card-actions{display:flex;gap:8px;flex-wrap:wrap}
+.card-actions button{min-height:40px}
+.card-actions .delete{border-color:#92756d;color:#ffd9cf}
+[hidden]{display:none!important}
+@media(max-width:500px){.nav-row{flex-direction:row}.action-row{flex-direction:row}.action-row>*{flex:1}}
