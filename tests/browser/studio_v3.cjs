@@ -104,12 +104,24 @@ const server=http.createServer((req,res)=>{
     await frame.locator('#card-form').waitFor({state:'visible'});
     assert.equal(await frame.locator('#card-list .card-row').count(),0);
     assert.equal(await frame.locator('#progress').innerText(),'0 of 0 learned');
-    await page.selectOption('#theme','midnight');
+    await Promise.all([
+      page.waitForEvent('framenavigated',{
+        predicate:target=>target.url().includes('/previews/flashcards-midnight/index.html'),
+        timeout:12000
+      }),
+      page.selectOption('#theme','midnight')
+    ]);
     await frame.locator('#card-form').waitFor({state:'visible'});
     assert.equal(await frame.locator('body').getAttribute('data-theme'),'midnight');
 
     // Other actual reviewed app types must respond to clicks, too.
-    await page.check('input[value="tasks"]');
+    await Promise.all([
+      page.waitForEvent('framenavigated',{
+        predicate:target=>target.url().includes('/previews/tasks-midnight/index.html'),
+        timeout:12000
+      }),
+      page.check('input[value="tasks"]')
+    ]);
     await frame.locator('#task-form').waitFor({state:'visible'});
     await frame.locator('#task-input').fill('Finish schoolwork');
     await frame.getByRole('button',{name:'Add task'}).click();
@@ -117,7 +129,13 @@ const server=http.createServer((req,res)=>{
     await frame.locator('#task-list input[type=checkbox]').check();
     assert.equal(await frame.locator('#clear-done').isEnabled(),true);
 
-    await page.check('input[value="notes"]');
+    await Promise.all([
+      page.waitForEvent('framenavigated',{
+        predicate:target=>target.url().includes('/previews/notes-midnight/index.html'),
+        timeout:12000
+      }),
+      page.check('input[value="notes"]')
+    ]);
     await frame.locator('#note-form').waitFor({state:'visible'});
     await frame.locator('#note-title').fill('Study plan');
     await frame.locator('#note-body').fill('Practice speech sounds');
