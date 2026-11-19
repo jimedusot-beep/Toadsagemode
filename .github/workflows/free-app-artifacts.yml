@@ -1,0 +1,49 @@
+name: Prepare free iPad app download ZIPs
+
+on:
+  push:
+    branches:
+      - feature/no-cost-browser-app-studio-20261118
+  pull_request:
+    paths:
+      - 'free-studio/**'
+      - 'toad_core/studio_templates/**'
+      - 'toad_core/app_studio.py'
+      - 'tools/build_free_studio_bundles.py'
+      - 'tests/test_free_studio_bundles.py'
+      - '.github/workflows/free-app-artifacts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  app-downloads:
+    name: Package reviewed apps for iPad (no deploy)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify browser catalog matches reviewed templates
+        run: python tools/build_free_studio_bundles.py --check-only
+      - name: Test exact package and source identity
+        run: python -m unittest discover -s tests -p test_free_studio_bundles.py -v
+      - name: Prepare separate flashcards and browser Studio ZIP contents
+        run: python tools/build_free_studio_bundles.py --output dist
+      - name: Upload ready-to-drop Flashcards app ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Toad-Sage-Flashcards-iPad-ReadyToUpload
+          path: dist/flashcards-site/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload ready-to-drop free App Studio ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Toad-Sage-FreeStudio-iPad-ReadyToUpload
+          path: dist/browser-studio/
+          if-no-files-found: error
+          retention-days: 7

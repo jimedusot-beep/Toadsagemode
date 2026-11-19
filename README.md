@@ -2,7 +2,7 @@
 
 A local-first absorption inbox and Python development engine. Save ideas or source, inspect them without execution, and organize reusable candidates. Optional Ollama and a separately restricted Docker worker provide bounded Python project missions. The protected core is never rewritten by imported abilities.
 
-[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [First working app (App Studio)](docs/APP_STUDIO.md) · [Zero-cost App Studio: tasks, notes, flashcards](docs/FREE_APP_STUDIO.md) · [AI app blueprint workflow](docs/AI_APP_BLUEPRINTS.md) · [Quarantined AI-written web app drafts](docs/WEB_CODE_QUARANTINE.md) · [Isolated WebKit acceptance lab](docs/WEBKIT_LAB.md) · [Frozen independent app checks](docs/FROZEN_WEB_ACCEPTANCE.md) · [Opt-in server-side Cloud AI](docs/CLOUD_AI_PROVIDER.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
+[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [First working app (App Studio)](docs/APP_STUDIO.md) · [Zero-cost App Studio: tasks, notes, flashcards](docs/FREE_APP_STUDIO.md) · [Build apps from iPad with no API key](docs/FREE_STUDIO_IPAD.md) · [AI app blueprint workflow](docs/AI_APP_BLUEPRINTS.md) · [Quarantined AI-written web app drafts](docs/WEB_CODE_QUARANTINE.md) · [Isolated WebKit acceptance lab](docs/WEBKIT_LAB.md) · [Frozen independent app checks](docs/FROZEN_WEB_ACCEPTANCE.md) · [Opt-in server-side Cloud AI](docs/CLOUD_AI_PROVIDER.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
 
 ## Next demonstration: empathy and personality learning
 
@@ -124,6 +124,19 @@ It builds a **real source ZIP** with independent per-app local storage,
 but does **not** call an LLM, execute untrusted model-generated code,
 or deploy the app. CI runs mobile WebKit on the reviewed templates.
 [Full instructions and honest limits](docs/FREE_APP_STUDIO.md).
+
+## Make an app directly from Safari at $0
+
+The static **Free App Studio** provides a simple mobile form for choosing
+a trusted Tasks, Notes or Flashcards app, title, theme and unique slug.
+It creates a real downloadable static ZIP in the browser — no model,
+AI API key, credits, app download fees, or server-side inference.
+The separate Flashcards test site is packaged as a second ready-to-upload ZIP.
+
+Get both from the `Prepare free iPad app download ZIPs` GitHub Actions
+artifacts. You can upload either ZIP **manually** to Netlify Drop to
+get a new test URL. Nothing is auto-published to your existing Tasks site.
+[Read the iPad workflow](docs/FREE_STUDIO_IPAD.md).
 
 ## Feed Toad on iPhone
 

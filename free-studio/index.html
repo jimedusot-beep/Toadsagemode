@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Toad Sage — Free App Studio</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#make">Skip to app builder</a>
+  <main class="shell">
+    <header class="masthead">
+      <div class="logo" aria-hidden="true">🐸</div>
+      <div>
+        <p class="eyebrow">TOAD SAGE / HEADQUARTERS</p>
+        <h1>Free App Studio</h1>
+        <p class="subtitle">Create a small working web app. No API keys, credits, or coding.</p>
+      </div>
+    </header>
+    <section class="panel" id="make" aria-labelledby="create-heading">
+      <div class="section-heading">
+        <h2 id="create-heading">Build a new app</h2>
+        <span class="chip">100% offline templates</span>
+      </div>
+      <p class="hint">Choose one tested app type. The app files download to your device as a ZIP.</p>
+      <form id="build-form">
+        <fieldset class="types">
+          <legend>1. Choose your app</legend>
+          <label class="kind"><input type="radio" name="kind" value="flashcards" checked>
+            <span><strong>Flashcards</strong><small>Study, flip, edit, search, track learned</small></span></label>
+          <label class="kind"><input type="radio" name="kind" value="tasks">
+            <span><strong>Task manager</strong><small>Add, complete, filter and clear tasks</small></span></label>
+          <label class="kind"><input type="radio" name="kind" value="notes">
+            <span><strong>Notes</strong><small>Write, edit, search and delete notes</small></span></label>
+        </fieldset>
+        <div class="field">
+          <label for="title">2. App title</label>
+          <input id="title" maxlength="80" required autocomplete="off" value="My Flashcards" placeholder="My Flashcards">
+        </div>
+        <div class="field">
+          <label for="slug">3. Unique app name</label>
+          <input id="slug" maxlength="40" required autocomplete="off" value="my-flashcards" placeholder="my-flashcards" aria-describedby="slug-help">
+          <small id="slug-help">Lowercase letters, numbers and hyphens. Used to keep one app's local data separate.</small>
+        </div>
+        <div class="field">
+          <label for="theme">4. Choose a theme</label>
+          <select id="theme">
+            <option value="forest">Forest green</option>
+            <option value="midnight">Midnight blue</option>
+          </select>
+        </div>
+        <button id="download" class="primary" type="submit" disabled>
+          Prepare downloadable app ZIP
+        </button>
+        <a id="download-link" class="download-link" href="#" download hidden>Download prepared ZIP</a>
+        <p id="status" role="status" aria-live="polite">Loading reviewed templates…</p>
+      </form>
+    </section>
+    <section class="panel" aria-labelledby="next-heading">
+      <h2 id="next-heading">Then try it on your iPad</h2>
+      <ol>
+        <li>Save your ZIP from the button above.</li>
+        <li>Open <a href="https://app.netlify.com/drop/" target="_blank" rel="noopener noreferrer">Netlify Drop</a>.</li>
+        <li>Choose the ZIP. Netlify gives this app its own test URL.</li>
+        <li>Open the test link in Safari and try adding a card or task.</li>
+      </ol>
+      <p class="hint">This creates a <strong>separate static app</strong>; your existing Toad Sage Tasks site is not changed. Netlify publishing is an explicit separate action you control.</p>
+    </section>
+    <footer>No account · No paid AI · No tracking · No automatic publication · Built from reviewed local source</footer>
+  </main>
+</body>
+</html>
