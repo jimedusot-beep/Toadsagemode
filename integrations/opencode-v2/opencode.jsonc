@@ -27,49 +27,14 @@
       "effect": "allow"
     },
     {
+      "action": "edit",
+      "resource": "*",
+      "effect": "ask"
+    },
+    {
       "action": "shell",
       "resource": "*",
       "effect": "ask"
-    },
-    {
-      "action": "edit",
-      "resource": "*",
-      "effect": "ask"
-    },
-    {
-      "action": "read",
-      "resource": "*.env",
-      "effect": "deny"
-    },
-    {
-      "action": "read",
-      "resource": "*.env.*",
-      "effect": "deny"
-    },
-    {
-      "action": "edit",
-      "resource": "*.env",
-      "effect": "deny"
-    },
-    {
-      "action": "edit",
-      "resource": "*.env.*",
-      "effect": "deny"
-    },
-    {
-      "action": "edit",
-      "resource": "*opencode.jsonc",
-      "effect": "deny"
-    },
-    {
-      "action": "edit",
-      "resource": "*opencode.json",
-      "effect": "deny"
-    },
-    {
-      "action": "edit",
-      "resource": "*.opencode/*",
-      "effect": "deny"
     },
     {
       "action": "shell",
@@ -87,23 +52,28 @@
       "effect": "deny"
     },
     {
-      "action": "shell",
-      "resource": "npm publish *",
-      "effect": "deny"
-    },
-    {
       "action": "external_directory",
       "resource": "*",
       "effect": "deny"
     },
     {
-      "action": "subagent",
-      "resource": "*",
+      "action": "read",
+      "resource": "*.env",
       "effect": "deny"
     },
     {
-      "action": "execute",
-      "resource": "*",
+      "action": "read",
+      "resource": "*.env.*",
+      "effect": "deny"
+    },
+    {
+      "action": "edit",
+      "resource": "*.env",
+      "effect": "deny"
+    },
+    {
+      "action": "edit",
+      "resource": "*.env.*",
       "effect": "deny"
     }
   ],
@@ -119,38 +89,18 @@
       "effect": "allow"
     },
     {
-      "action": "integration.connect",
-      "resource": "*",
+      "action": "tool.use",
+      "resource": "shell:git push *",
       "effect": "deny"
     },
     {
-      "action": "integration.use",
-      "resource": "*",
+      "action": "tool.use",
+      "resource": "shell:sudo *",
       "effect": "deny"
     },
     {
-      "action": "integration.use",
-      "resource": "opencode",
-      "effect": "allow"
-    },
-    {
-      "action": "mcp.use",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "skill.use",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "plugin.use",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "websearch.use",
-      "resource": "*",
+      "action": "tool.use",
+      "resource": "shell:rm -rf *",
       "effect": "deny"
     },
     {
@@ -179,33 +129,18 @@
       "effect": "deny"
     },
     {
-      "action": "tool.use",
-      "resource": "edit:*opencode.jsonc",
+      "action": "mcp.use",
+      "resource": "*",
       "effect": "deny"
     },
     {
-      "action": "tool.use",
-      "resource": "edit:*opencode.json",
+      "action": "skill.use",
+      "resource": "*",
       "effect": "deny"
     },
     {
-      "action": "tool.use",
-      "resource": "shell:git push *",
-      "effect": "deny"
-    },
-    {
-      "action": "tool.use",
-      "resource": "shell:sudo *",
-      "effect": "deny"
-    },
-    {
-      "action": "tool.use",
-      "resource": "shell:rm -rf *",
-      "effect": "deny"
-    },
-    {
-      "action": "tool.use",
-      "resource": "shell:npm publish *",
+      "action": "plugin.use",
+      "resource": "*",
       "effect": "deny"
     }
   ]
