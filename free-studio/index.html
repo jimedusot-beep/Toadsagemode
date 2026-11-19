@@ -7,7 +7,9 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
   <title>Toad Sage — Free App Studio</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="v2.css">
   <script src="app.js" defer></script>
+  <script src="v2.js" defer></script>
 </head>
 <body>
   <a class="skip" href="#make">Skip to app builder</a>
@@ -58,6 +60,43 @@
         <a id="download-link" class="download-link" href="#" download hidden>Download prepared ZIP</a>
         <p id="status" role="status" aria-live="polite">Loading reviewed templates…</p>
       </form>
+    </section>
+    <section class="panel" id="preview-panel" aria-labelledby="preview-heading">
+      <div class="section-heading">
+        <h2 id="preview-heading">Live design preview</h2>
+        <span class="chip">Visual only · no app data executed</span>
+      </div>
+      <p class="hint">Changes to the app type, title, and theme appear here instantly. This shows the design, not a running app. Your downloaded app contains the actual tested template.</p>
+      <div class="field preview-setting">
+        <label for="preview-size">Preview screen</label>
+        <select id="preview-size">
+          <option value="phone">Phone</option>
+          <option value="tablet">Tablet</option>
+        </select>
+      </div>
+      <div id="preview-stage" class="preview-stage">
+        <div id="device-preview" class="device-preview" data-size="phone" data-theme="forest">
+          <header class="mock-header">
+            <span class="mock-icon" aria-hidden="true">🐸</span>
+            <div><span class="mock-brand">TOAD SAGE / APP STUDIO</span><h3 id="preview-title">My Flashcards</h3></div>
+          </header>
+          <div id="preview-content" class="preview-content" aria-label="Noninteractive example app design"></div>
+          <span class="mock-footer">Example content · Not your saved app data</span>
+        </div>
+      </div>
+      <p class="hint">Preview is noninteractive and isolated from your app's browser storage. After download, test the real app separately.</p>
+    </section>
+    <section class="panel" id="projects-panel" aria-labelledby="projects-heading">
+      <div class="section-heading">
+        <h2 id="projects-heading">Saved projects</h2>
+        <span id="project-count" class="chip">0 of 20</span>
+      </div>
+      <p class="hint">Save the current app type, title, name and theme. Projects are stored only in this browser on this device. They do not sync between devices.</p>
+      <button id="save-project" type="button" class="secondary">Save current project</button>
+      <p id="projects-status" role="status" aria-live="polite">Checking local project storage…</p>
+      <ul id="project-list" aria-label="Saved app projects"></ul>
+      <p id="projects-empty" class="hint">No saved projects yet.</p>
+      <p class="hint">Saved projects store settings only, not the app's tasks, notes or flashcards. Export your app ZIP separately.</p>
     </section>
     <section class="panel" aria-labelledby="next-heading">
       <h2 id="next-heading">Then try it on your iPad</h2>
