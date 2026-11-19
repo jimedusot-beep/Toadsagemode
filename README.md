@@ -2,7 +2,7 @@
 
 A local-first absorption inbox and Python development engine. Save ideas or source, inspect them without execution, and organize reusable candidates. Optional Ollama and a separately restricted Docker worker provide bounded Python project missions. The protected core is never rewritten by imported abilities.
 
-[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [First working app (App Studio)](docs/APP_STUDIO.md) · [AI app blueprint workflow](docs/AI_APP_BLUEPRINTS.md) · [Quarantined AI-written web app drafts](docs/WEB_CODE_QUARANTINE.md) · [Isolated WebKit acceptance lab](docs/WEBKIT_LAB.md) · [Frozen independent app checks](docs/FROZEN_WEB_ACCEPTANCE.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
+[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [First working app (App Studio)](docs/APP_STUDIO.md) · [AI app blueprint workflow](docs/AI_APP_BLUEPRINTS.md) · [Quarantined AI-written web app drafts](docs/WEB_CODE_QUARANTINE.md) · [Isolated WebKit acceptance lab](docs/WEBKIT_LAB.md) · [Frozen independent app checks](docs/FROZEN_WEB_ACCEPTANCE.md) · [Opt-in server-side Cloud AI](docs/CLOUD_AI_PROVIDER.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
 
 ## Next demonstration: empathy and personality learning
 
@@ -95,6 +95,17 @@ python -m toad_core app code-show DRAFT_ID
 GitHub Actions uses explicit model doubles to validate this data-only
 pipeline. A real local model, isolated JavaScript test worker and
 human-authorized release process are **still outstanding**.
+
+## Optional cloud coding model (trusted server only)
+
+The app-generation commands can now optionally select a **server-side**
+OpenAI Responses model. This requires a separately authorized API account,
+model ID, privately stored key and explicit paid-request consent. No model
+call occurs during setup or `app ai-status` checks. Local Ollama remains
+the default. The static iPhone Netlify task app does **not** have an AI
+backend yet, and no API key belongs in browser code.
+
+See [Cloud AI provider setup and safety gates](docs/CLOUD_AI_PROVIDER.md).
 
 ## Feed Toad on iPhone
 
