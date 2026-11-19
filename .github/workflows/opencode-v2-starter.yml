@@ -26,7 +26,7 @@ jobs:
       - name: Syntax and policy
         run: |
           python -m py_compile tools/opencode_v2_starter.py tests/test_opencode_v2_starter.py
-          python tools/opencode_v2_starter.py --validate-config
+          python tools/opencode_v2_starter.py --check
       - name: Offline regression tests (not live model evidence)
         run: python -m unittest discover -s tests -p test_opencode_v2_starter.py -v
       - uses: actions/setup-node@v4
@@ -51,4 +51,4 @@ jobs:
       - name: Install isolated official CLI pin (NO model calls)
         run: npm install -g @opencode/cli@2.3.2
       - name: Verify actual installed CLI version
-        run: python tools/opencode_v2_starter.py --check
+        run: python tools/opencode_v2_starter.py --check --expected-version "$(cat integrations/opencode-v2/version.txt)"
