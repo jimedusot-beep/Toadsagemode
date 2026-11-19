@@ -5,6 +5,7 @@ Static config checks are not runtime permission tests. No model calls on --check
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -73,10 +74,12 @@ def _strict_rules(data: object, field: str, expected: list[tuple[str, str, str]]
 
 def check_config(path: Path = CONFIG) -> None:
     data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict) or set(data) != {"$schema", "permissions", "policies"}:
+    if not isinstance(data, dict) or set(data) != {"$schema", "model", "permissions", "policies"}:
         raise ValueError("Unexpected OpenCode config keys")
     if data["$schema"] != "https://opencode.ai/config.json":
         raise ValueError("Unexpected OpenCode config schema")
+    if data["model"] not in FREE_MODEL_CANDIDATES:
+        raise ValueError("Model is not a reviewed free-model candidate")
     _strict_rules(data, "permissions", APPROVED_PERMISSIONS)
     _strict_rules(data, "policies", APPROVED_POLICIES)
 
@@ -114,6 +117,8 @@ def clean_environment(root: Path) -> dict[str, str]:
 
 def launch(expected_version: str, model: str) -> int:
     check_config()
+    if json.loads(CONFIG.read_text(encoding="utf-8"))["model"] != model:
+        raise ValueError("Chosen model must match the reviewed config model")
     if model not in FREE_MODEL_CANDIDATES:
         raise ValueError("Model not on the reviewed free-model candidate list")
     executable = shutil.which("opencode")
@@ -124,14 +129,31 @@ def launch(expected_version: str, model: str) -> int:
     workspace = root / "app"
     workspace.mkdir(mode=0o700)
     (workspace / "opencode.jsonc").write_bytes(CONFIG.read_bytes())
+    # Acceptance inputs are written BEFORE any agent prompt; hashes detect
+    # tampering after the interactive run. This is NOT same-user isolation.
+    frozen = {}
+    for name in ("CALCULATOR_MISSION.md", "calculator-acceptance.test.mjs"):
+        source = ROOT / "integrations" / "opencode-v2" / name
+        output = workspace / name
+        payload = source.read_bytes()
+        output.write_bytes(payload)
+        output.chmod(0o444)
+        frozen[name] = hashlib.sha256(payload).hexdigest()
+    print("Frozen test SHA256:", frozen["calculator-acceptance.test.mjs"], flush=True)
     env = clean_environment(root)
     print(f"Fresh experiment workspace: {workspace}", flush=True)
     print(f"Verified CLI version: {expected_version}; selected candidate model: {model}", flush=True)
     print("NOT a host sandbox. Verify current $0 pricing and privacy terms before any model call.", flush=True)
     print("No robot files or credentials; approve individual shell and edit requests once only.", flush=True)
     # mini supports --model and --standalone per official CLI documentation.
-    return subprocess.call([executable, "mini", "--standalone", "--model", model],
-                           cwd=workspace, env=env)
+    exit_code = subprocess.call([executable, "mini", "--standalone", "--model", model],
+                                cwd=workspace, env=env)
+    changed = [name for name, digest in frozen.items()
+               if not (workspace / name).is_file()
+               or hashlib.sha256((workspace / name).read_bytes()).hexdigest() != digest]
+    if changed:
+        raise RuntimeError(f"Frozen acceptance files changed during the run: {changed}")
+    return exit_code
 
 
 def main(argv: list[str] | None = None) -> int:
