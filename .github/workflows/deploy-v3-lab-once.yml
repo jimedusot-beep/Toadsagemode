@@ -1,0 +1,52 @@
+name: One-time deploy reviewed Toad Sage Studio V3 lab
+on:
+  push:
+    branches:
+      - deploy/toad-studio-v3-lab-20261119
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy isolated V3 lab only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Confirm exact reviewed template manifest
+        run: python tools/build_free_studio_bundles.py --check-only
+      - name: Package already-reviewed static site only
+        run: python tools/build_free_studio_bundles.py --output dist
+      - name: Verify target site and credential availability
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: 8af449f7-45c2-41d5-8f4c-6c61ba6d0971
+        shell: bash
+        run: |
+          if [[ -z "$NETLIFY_AUTH_TOKEN" ]]; then
+            echo "::error::No NETLIFY_AUTH_TOKEN GitHub repository secret is available. This one-off deployment was NOT attempted. Use the Netlify project Deploys page to upload the existing successful GitHub artifact instead. Never put tokens in source."
+            exit 1
+          fi
+          if [[ "$NETLIFY_SITE_ID" != "8af449f7-45c2-41d5-8f4c-6c61ba6d0971" ]]; then
+            echo "::error::Unexpected site target."
+            exit 1
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Publish to separate test site only
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: 8af449f7-45c2-41d5-8f4c-6c61ba6d0971
+        shell: bash
+        run: |
+          # Credentials are taken only from the existing masked GitHub secret.
+          # No credentials, LLM requests, unreviewed code, or new Netlify site.
+          npx --yes netlify-cli@23.11.0 deploy \
+            --site "$NETLIFY_SITE_ID" \
+            --dir dist/browser-studio \
+            --prod
