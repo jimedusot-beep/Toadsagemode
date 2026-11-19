@@ -20,12 +20,12 @@ Toad Sage retains mission planning, SQLite memory, and final review. OpenCode is
 3. Validate the exact reviewed config offline, execute the local Python regression tests, and check the actual installed binary:
 
    ```sh
-   python3 tools/opencode_v2_starter.py --validate-config
-   python3 -m unittest discover -s tests -p 'test_opencode_v2_starter.py' -v
    python3 tools/opencode_v2_starter.py --check
+   python3 -m unittest discover -s tests -p 'test_opencode_v2_starter.py' -v
+   python3 tools/opencode_v2_starter.py --check --expected-version 2.3.2
    ```
 
-`--validate-config` does **not** execute OpenCode. `--check` **does** run `opencode --version` and requires the exact version in `integrations/opencode-v2/version.txt` (currently 2.3.2). Passing local unit tests does not prove runtime policy enforcement.
+Plain `--check` validates the static config without calling the CLI. With `--expected-version`, it additionally executes `opencode --version` and requires an exact match (documented target 2.3.2). Passing local unit tests does not prove runtime policy enforcement.
 
 4. Launch the **interactive** V2 application:
 
@@ -33,17 +33,18 @@ Toad Sage retains mission planning, SQLite memory, and final review. OpenCode is
    python3 tools/opencode_v2_starter.py --launch --expected-version 2.3.2 --model opencode/deepseek-v4.1-flash-free
    ```
 
-The starter creates an empty project, a fresh HOME with scrubbed environment variables, and a private `opencode --standalone` service. It preloads the frozen `CALCULATOR_MISSION.md` and `calculator-acceptance.test.mjs`. The project is disposable but is **not an OS sandbox**; approved shell commands still carry host-user privileges.
+The starter creates an empty `/app` directory, fresh HOME/XDG directories, and launches private `opencode mini --standalone --model ...`. It does NOT preload the mission or acceptance files. Paste the approved requirements into OpenCode as text and keep independent tests outside its writable directory. The project is disposable but is **not an OS sandbox**; approved shell commands still carry host-user privileges.
 
-5. Before sending any prompt, confirm OpenCode visibly selected `opencode/deepseek-v4.1-flash-free`. Official catalog currently lists this as free for a limited time, but free status can change. **Stay signed out of Console** and do not add provider API keys or payment methods. The configuration defaults to one free model and narrows providers, but cannot guarantee $0 if you manually switch to another model. Stop if free model is unavailable.
+5. Before sending any prompt, confirm OpenCode visibly selected `opencode/deepseek-v4.1-flash-free`. Official catalog currently lists this as free for a limited time, but free status can change. **Stay signed out of Console** and do not add provider API keys or payment methods. The CLI selects a reviewed candidate-free model and narrows providers, but cannot guarantee $0 if pricing changes or you manually switch to another model. Stop if free model is unavailable.
 
-6. Ask OpenCode to implement the preloaded mission. Do not modify the frozen acceptance test. Approve one comprehensible command/edit request at a time, never a standing blanket approval. When source files exist, run independently in the experiment folder:
+6. Ask OpenCode to implement the preloaded mission. Do not modify the frozen acceptance test. Approve one comprehensible command/edit request at a time, never a standing blanket approval. When source files exist, run independently **from the review checkout** on a disposable test host (the runner imports untrusted code):
 
    ```sh
-   node --test calculator-acceptance.test.mjs
+   TOAD_CALCULATOR_DIR=/absolute/path/printed/by/launcher/app \
+     node --test integrations/opencode-v2/calculator.acceptance.test.mjs
    ```
 
-Record the command, model and version, full stdout/stderr, exit code and generated diff. Preserve a failing test and then one supervised repair with a passing retest. Manually check keyboard interaction and invalid-input messages in the browser. The frozen test intentionally fails when `calculator.mjs` does not yet exist.
+Record the command, model and version, full stdout/stderr, exit code and generated diff. Preserve a failing test and then one supervised repair with a passing retest. Manually check keyboard interaction and invalid-input messages in the browser. The frozen independent test fails if any of the four required files is absent. The source code must follow `calculate(operation, first, second)` exactly.
 
 7. Exit OpenCode (Ctrl+C or normal exit), inspect logs and generated source, and only then decide whether to copy results into a feature branch for review. Delete the Codespace from https://github.com/codespaces after collecting evidence; its compute usage stops and storage eventually stops accruing after deletion.
 
@@ -52,8 +53,8 @@ Record the command, model and version, full stdout/stderr, exit code and generat
 - **Permissions:** ordered V2 rules ask for shell/edit and deny unauthorized external paths and selected sensitive/destructive operations. Hard policies deny unrelated providers, integrations, plugins, MCP, web search and out-of-project access. Built-in shell checks remain best-effort and can be bypassed through commands the human approves; security requires OS isolation.
 - **Version:** exact 2.3.2 pin, checked using the actual CLI before launch; do not install `latest` as an uncontrolled runtime.
 - **Price:** the signed-out free model is the default and provider selection is restricted, but real no-charge proof requires an actual successful free model session and account/billing verification. Never submit private project data.
-- **Test evidence:** repository Python regression tests verify the starter, not actual OpenCode. Its new GitHub workflow runs only offline checks. An agent-generated calculator, a real failed test, a real correction and a passing test are still unverified.
-- **Frozen inputs:** mission and test are copied into the temporary workspace as read-only audit cues; the script hashes them after the agent exits and fails if modified. Read-only permissions and hashes cannot prevent same-UID command execution.
+- **Test evidence:** repository Python regression tests verify the starter, not actual OpenCode. Its GitHub workflow also attempts a pinned CLI version smoke but does not call a model. An agent-generated calculator, a real failed test, a real correction and a passing test are still unverified.
+- **Frozen inputs:** mission and independent acceptance tests stay in the review checkout, outside the agent's fresh writable `/app` directory. The current launcher does not hash or certify those inputs after the experiment; preserve their Git commit hashes for review.
 - **No automatic release:** GitHub PR creation, merging, deployments, production secrets and robot movement are outside the coding agent's first pilot.
 
 ## Official references
