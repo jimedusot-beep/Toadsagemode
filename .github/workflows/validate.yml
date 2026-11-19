@@ -36,16 +36,16 @@ jobs:
   browser:
     name: Mobile WebKit
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
+    # Trusted repository templates ONLY. Do not run AI-generated candidate
+    # source here; that has a separate no-network Docker worker.
+    # Exact version matches package-lock.json and includes browser + OS deps,
+    # avoiding slow Ubuntu apt mirrors on hosted runners.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
       - run: npm ci --ignore-scripts
-      - name: Install WebKit test browser
-        run: npx playwright install --with-deps webkit
       - name: Exercise iPhone-sized inbox, storage failure and backup paths
         run: npm run test:browser
 
