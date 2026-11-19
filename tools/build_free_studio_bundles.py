@@ -23,7 +23,7 @@ STUDIO_DIR = ROOT / "free-studio"
 ARTIFACT_DIR = ROOT / "dist"
 PREVIEW_NAME = "Toad-Sage-Flashcards-iPad.zip"
 STUDIO_NAME = "Toad-Sage-Free-App-Studio.zip"
-STUDIO_FILES = ("index.html", "styles.css", "app.js", "templates.json")
+STUDIO_FILES = ("index.html", "styles.css", "app.js", "templates.json", "v2.css", "v2.js")
 TEMPLATES = ROOT / "toad_core" / "studio_templates"
 
 
