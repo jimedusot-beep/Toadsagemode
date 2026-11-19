@@ -1,0 +1,6 @@
+/* Interactive preview: responsive sandbox frame without parent access. */
+.interactive-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0}
+#interactive-frame{display:block;width:100%;height:560px;min-height:320px;border:3px solid #80a98a;border-radius:16px;background:#0d1712;color:#eaf7ed;box-sizing:border-box}
+#interactive-status{color:#bcd5c3;font-size:.89rem;min-height:1.5em}
+#interactive-panel .hint{overflow-wrap:anywhere}
+@media(max-width:500px){#interactive-frame{height:530px;border-radius:12px}.interactive-toolbar button{width:100%}}

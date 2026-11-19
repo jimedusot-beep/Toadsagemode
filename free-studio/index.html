@@ -4,12 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'self'">
   <title>Toad Sage — Free App Studio</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="v2.css">
+  <link rel="stylesheet" href="v3.css">
   <script src="app.js" defer></script>
   <script src="v2.js" defer></script>
+  <script src="v3.js" defer></script>
 </head>
 <body>
   <a class="skip" href="#make">Skip to app builder</a>
@@ -85,6 +87,26 @@
         </div>
       </div>
       <p class="hint">Preview is noninteractive and isolated from your app's browser storage. After download, test the real app separately.</p>
+    </section>
+    <section class="panel" id="interactive-panel" aria-labelledby="interactive-heading">
+      <div class="section-heading">
+        <h2 id="interactive-heading">Try the real app controls</h2>
+        <span class="chip">Reviewed templates only</span>
+      </div>
+      <p class="hint">This preview runs the reviewed app's buttons and forms inside an origin-isolated frame. Try adding a flashcard, task, or note. Changes are temporary and never appear in your saved apps.</p>
+      <div class="interactive-toolbar">
+        <span id="interactive-label" class="mock-muted">Flashcards · Forest green</span>
+        <button id="reset-interactive" type="button" class="secondary">Reset preview data</button>
+      </div>
+      <iframe
+        id="interactive-frame"
+        title="Isolated interactive Flashcards preview"
+        sandbox="allow-scripts"
+        referrerpolicy="no-referrer"
+        loading="eager"
+      ></iframe>
+      <p id="interactive-status" role="status" aria-live="polite">Loading the isolated preview…</p>
+      <p class="hint">Security boundary: the preview has no same-origin privilege, permanent browser storage, file uploads, network access or deployment permission. Only reviewed app templates can run here; arbitrary AI-generated code is excluded.</p>
     </section>
     <section class="panel" id="projects-panel" aria-labelledby="projects-heading">
       <div class="section-heading">

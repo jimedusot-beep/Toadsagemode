@@ -10,6 +10,8 @@ on:
       - 'toad_core/studio_templates/**'
       - 'toad_core/app_studio.py'
       - 'tools/build_free_studio_bundles.py'
+      - 'tools/build_interactive_previews.py'
+      - 'tests/test_studio_v3_previews.py'
       - 'tests/test_free_studio_bundles.py'
       - '.github/workflows/free-app-artifacts.yml'
   workflow_dispatch:

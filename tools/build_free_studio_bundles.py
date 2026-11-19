@@ -17,13 +17,14 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from toad_core.app_studio import AppStudio
+from tools.build_interactive_previews import preview_documents
 
 
 STUDIO_DIR = ROOT / "free-studio"
 ARTIFACT_DIR = ROOT / "dist"
 PREVIEW_NAME = "Toad-Sage-Flashcards-iPad.zip"
 STUDIO_NAME = "Toad-Sage-Free-App-Studio.zip"
-STUDIO_FILES = ("index.html", "styles.css", "app.js", "templates.json", "v2.css", "v2.js")
+STUDIO_FILES = ("index.html", "styles.css", "app.js", "templates.json", "v2.css", "v2.js", "v3.css", "v3.js")
 TEMPLATES = ROOT / "toad_core" / "studio_templates"
 
 
@@ -80,6 +81,8 @@ def build(out=ARTIFACT_DIR):
             report = json.loads(archive.read("build_report.json"))
             if report["status"] != "generated_unverified" or report["deployed"] is not False:
                 raise ValueError("Preview report must remain unverified/undeployed")
+    preview_pages = preview_documents()
+    expected_members = list(STUDIO_FILES) + sorted(preview_pages)
     bundle = out / STUDIO_NAME
     with zipfile.ZipFile(bundle, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for name in STUDIO_FILES:
@@ -87,8 +90,10 @@ def build(out=ARTIFACT_DIR):
             if path.is_symlink() or not path.is_file():
                 raise ValueError("Missing or symlinked studio asset: " + name)
             archive.write(path, name)
+        for name in sorted(preview_pages):
+            archive.writestr(name, preview_pages[name])
     with zipfile.ZipFile(bundle) as archive:
-        if archive.namelist() != list(STUDIO_FILES):
+        if archive.namelist() != expected_members:
             raise ValueError("Browser studio bundle names are invalid")
 
     # Source-only folders are uploaded to GitHub Actions as a single
@@ -107,6 +112,10 @@ def build(out=ARTIFACT_DIR):
             (flash_folder / name).write_bytes(archive.read(name))
     for name in STUDIO_FILES:
         shutil.copyfile(STUDIO_DIR / name, studio_folder / name)
+    for name, html in preview_pages.items():
+        target = studio_folder / name
+        target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        target.write_text(html, encoding="utf-8")
     results = {
         "schema": "toad-static-preview-artifacts-v1",
         "model_called": False,
@@ -114,6 +123,12 @@ def build(out=ARTIFACT_DIR):
         "deployed": False,
         "requires_user_upload_to_netlify": True,
         "catalog": info,
+        "interactive_previews": {
+            "count": len(preview_pages),
+            "reviewed_templates_only": True,
+            "sandbox_allow_scripts_without_same_origin": True,
+            "in_memory_only": True,
+        },
         "artifacts": [
             {"name": preview.name, "bytes": preview.stat().st_size, "sha256": _sha(preview)},
             {"name": bundle.name, "bytes": bundle.stat().st_size, "sha256": _sha(bundle)},

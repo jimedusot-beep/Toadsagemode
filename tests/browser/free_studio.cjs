@@ -10,7 +10,7 @@ const http = require('node:http');
 const {crc32} = require('../../free-studio/app.js');
 
 const root = path.resolve(__dirname, '../../free-studio');
-const allowed = new Set(['/index.html','/styles.css','/app.js','/templates.json','/v2.css','/v2.js']);
+const allowed = new Set(['/index.html','/styles.css','/app.js','/templates.json','/v2.css','/v2.js','/v3.css','/v3.js']);
 const mime = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8'};
 const server = http.createServer((req,res) => {
   const pathname = new URL(req.url,'http://localhost').pathname;
