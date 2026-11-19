@@ -115,6 +115,14 @@
       </div>
       <p class="hint">Save the current app type, title, name and theme. Projects are stored only in this browser on this device. They do not sync between devices.</p>
       <button id="save-project" type="button" class="secondary">Save current project</button>
+      <div class="backup-controls" aria-label="Backup or restore project settings">
+        <button id="backup-projects" type="button" class="secondary" disabled>Prepare project backup</button>
+        <a id="backup-link" class="download-link" href="#" download hidden>Download project backup</a>
+        <label for="backup-file">Restore a project-settings JSON backup</label>
+        <input type="file" id="backup-file" accept=".json,application/json" aria-describedby="backup-help">
+        <button id="restore-projects" type="button" class="secondary" disabled>Restore settings without overwriting</button>
+        <small id="backup-help">Only names, titles, types, themes and save dates are included. Conflicting names are refused. No app content or source code is transferred.</small>
+      </div>
       <p id="projects-status" role="status" aria-live="polite">Checking local project storage…</p>
       <ul id="project-list" aria-label="Saved app projects"></ul>
       <p id="projects-empty" class="hint">No saved projects yet.</p>
