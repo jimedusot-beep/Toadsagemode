@@ -1,4 +1,7 @@
-"""Reviewable, interactive OpenCode V2 experiment. Never executes during validation."""
+"""Fail-closed OpenCode V2 experiment launcher, NOT an OS security sandbox.
+
+Static config checks are not runtime permission tests. No model calls on --check.
+"""
 from __future__ import annotations
 
 import argparse
@@ -7,172 +10,149 @@ import os
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "integrations" / "opencode-v2" / "opencode.jsonc"
-VERSION = ROOT / "integrations" / "opencode-v2" / "version.txt"
-APPROVED_MODEL = "opencode/deepseek-v4.1-flash-free"
-
-# Exact allow/ask policy: additions cannot silently expand authority.
-PERMISSION_RULES = [
+# An explicit snapshot: if any rule is removed, reordered or changed, preflight fails.
+# Updating this baseline requires deliberate code review and a regression test update.
+APPROVED_PERMISSIONS = [
     ("*", "*", "deny"),
     ("read", "*", "allow"),
     ("glob", "*", "allow"),
     ("grep", "*", "allow"),
     ("question", "*", "allow"),
-    ("shell", "*", "ask"),
     ("edit", "*", "ask"),
+    ("shell", "*", "ask"),
+    ("shell", "git push *", "deny"),
+    ("shell", "sudo *", "deny"),
+    ("shell", "rm -rf *", "deny"),
+    ("external_directory", "*", "deny"),
     ("read", "*.env", "deny"),
     ("read", "*.env.*", "deny"),
     ("edit", "*.env", "deny"),
     ("edit", "*.env.*", "deny"),
-    ("edit", "*opencode.jsonc", "deny"),
-    ("edit", "*opencode.json", "deny"),
-    ("edit", "*.opencode/*", "deny"),
-    ("shell", "git push *", "deny"),
-    ("shell", "sudo *", "deny"),
-    ("shell", "rm -rf *", "deny"),
-    ("shell", "npm publish *", "deny"),
-    ("external_directory", "*", "deny"),
-    ("subagent", "*", "deny"),
-    ("execute", "*", "deny"),
 ]
-POLICY_RULES = [
+APPROVED_POLICIES = [
     ("provider.use", "*", "deny"),
     ("provider.use", "opencode", "allow"),
-    ("integration.connect", "*", "deny"),
-    ("integration.use", "*", "deny"),
-    ("integration.use", "opencode", "allow"),
-    ("mcp.use", "*", "deny"),
-    ("skill.use", "*", "deny"),
-    ("plugin.use", "*", "deny"),
-    ("websearch.use", "*", "deny"),
+    ("tool.use", "shell:git push *", "deny"),
+    ("tool.use", "shell:sudo *", "deny"),
+    ("tool.use", "shell:rm -rf *", "deny"),
     ("tool.use", "external_directory:*", "deny"),
     ("tool.use", "read:*.env", "deny"),
     ("tool.use", "read:*.env.*", "deny"),
     ("tool.use", "edit:*.env", "deny"),
     ("tool.use", "edit:*.env.*", "deny"),
-    ("tool.use", "edit:*opencode.jsonc", "deny"),
-    ("tool.use", "edit:*opencode.json", "deny"),
-    ("tool.use", "shell:git push *", "deny"),
-    ("tool.use", "shell:sudo *", "deny"),
-    ("tool.use", "shell:rm -rf *", "deny"),
-    ("tool.use", "shell:npm publish *", "deny"),
+    ("mcp.use", "*", "deny"),
+    ("skill.use", "*", "deny"),
+    ("plugin.use", "*", "deny"),
 ]
+# These exact IDs were shown as free by OpenCode's official model catalog
+# on 2026-11-19. Operator must check current price and data policies again.
+FREE_MODEL_CANDIDATES = (
+    "opencode/deepseek-v4.1-flash-free",
+    "opencode/mimo-v2.6-flash-free",
+)
+VERSION_PATTERN = re.compile(r"^2\.(\d+)\.(\d+)(?:[-+][a-zA-Z0-9.-]+)?$")
 
 
-def validate_config(path: Path = CONFIG) -> dict:
-    """Fail closed on unknown keys, missing rules, changed order or unexpected grants."""
+def _strict_rules(data: object, field: str, expected: list[tuple[str, str, str]]) -> None:
+    if not isinstance(data, dict) or not isinstance(data.get(field), list):
+        raise ValueError(f"Missing {field} rule array")
+    actual = []
+    for rule in data[field]:
+        if (not isinstance(rule, dict) or set(rule) != {"action", "resource", "effect"}
+                or any(not isinstance(value, str) for value in rule.values())):
+            raise ValueError(f"Unexpected {field} rule shape")
+        actual.append((rule["action"], rule["resource"], rule["effect"]))
+    if actual != expected:
+        raise ValueError(f"{field} differs from the approved ordered fail-closed baseline")
+
+
+def check_config(path: Path = CONFIG) -> None:
     data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict) or set(data) != {"$schema", "model", "permissions", "policies"}:
-        raise ValueError("Unexpected OpenCode settings; refusing to launch")
+    if not isinstance(data, dict) or set(data) != {"$schema", "permissions", "policies"}:
+        raise ValueError("Unexpected OpenCode config keys")
     if data["$schema"] != "https://opencode.ai/config.json":
-        raise ValueError("Unexpected OpenCode schema")
-    if data["model"] != APPROVED_MODEL:
-        raise ValueError("Unapproved model; use the explicitly free test model only")
-    for key, expected in (("permissions", PERMISSION_RULES), ("policies", POLICY_RULES)):
-        rules = data[key]
-        if not isinstance(rules, list):
-            raise ValueError(f"{key} must be an ordered array")
-        if any(not isinstance(r, dict) or set(r) != {"action", "resource", "effect"} for r in rules):
-            raise ValueError(f"Invalid {key} entry")
-        actual = [(r["action"], r["resource"], r["effect"]) for r in rules]
-        if actual != expected:
-            raise ValueError(f"{key} differs from reviewed fail-closed policy")
-    return data
+        raise ValueError("Unexpected OpenCode config schema")
+    _strict_rules(data, "permissions", APPROVED_PERMISSIONS)
+    _strict_rules(data, "policies", APPROVED_POLICIES)
 
 
-def pinned_version(path: Path = VERSION) -> str:
-    pin = path.read_text(encoding="utf-8").strip()
-    if not re.fullmatch(r"2\.\d+\.\d+", pin):
-        raise ValueError("OpenCode version must be an exact V2 release")
-    return pin
+def installed_version(executable: str, expected: str) -> str:
+    if not VERSION_PATTERN.fullmatch(expected):
+        raise ValueError("--expected-version must be an exact 2.x.y release")
+    minor, patch = map(int, VERSION_PATTERN.fullmatch(expected).groups())
+    if (minor, patch) < (2, 2) or (minor == 2 and patch < 6):
+        raise ValueError("OpenCode V2 >=2.2.6 is required for these policy controls")
+    response = subprocess.run([executable, "--version"], capture_output=True, text=True,
+                              check=True, timeout=15)
+    observed = response.stdout.strip()
+    if observed != expected:
+        raise RuntimeError(f"OpenCode version mismatch: expected {expected}; found {observed!r}")
+    return observed
 
 
-def verify_binary(pin: str, executable: str | None = None) -> str:
-    executable = executable or shutil.which("opencode")
-    if not executable:
-        raise RuntimeError("OpenCode missing; install pinned @opencode/cli before --check")
-    result = subprocess.run(
-        [executable, "--version"], capture_output=True, text=True, timeout=15, check=False
-    )
-    output = (result.stdout + "\n" + result.stderr).strip()
-    if result.returncode != 0 or not re.search(
-        r"(?<![\d.])" + re.escape(pin) + r"(?![\w.-])", output
-    ):
-        raise RuntimeError(f"Expected OpenCode {pin}; executable returned: {output[:160]}")
-    return executable
-
-
-def isolated_environment(home: Path) -> dict[str, str]:
-    """Never forward inherited API keys or repository credentials to the child."""
-    env = {k: os.environ[k] for k in ("PATH", "TERM", "LANG", "LC_ALL", "TZ") if k in os.environ}
-    env["HOME"] = str(home)
-    env["XDG_CONFIG_HOME"] = str(home / ".config")
-    env["XDG_DATA_HOME"] = str(home / ".local" / "share")
-    env["XDG_CACHE_HOME"] = str(home / ".cache")
+def clean_environment(root: Path) -> dict[str, str]:
+    # Whitelist instead of copying os.environ: no inherited API keys/tokens.
+    env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+           "HOME": str(root / "home"),
+           "XDG_CONFIG_HOME": str(root / "home" / ".config"),
+           "XDG_DATA_HOME": str(root / "home" / ".local" / "share"),
+           "XDG_CACHE_HOME": str(root / "home" / ".cache"),
+           "XDG_STATE_HOME": str(root / "home" / ".local" / "state"),
+           "TERM": os.environ.get("TERM", "xterm-256color"),
+           "LANG": os.environ.get("LANG", "C.UTF-8")}
+    for key in ("HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME", "XDG_STATE_HOME"):
+        Path(env[key]).mkdir(parents=True, exist_ok=True, mode=0o700)
     return env
 
 
-def launch(executable: str) -> int:
-    # An OS-level sandbox is REQUIRED for untrusted tasks; this is only a fresh
-    # project and home. Use an otherwise empty disposable VM/Codespace.
-    directory = Path(tempfile.mkdtemp(prefix="toad-opencode-v2-")).resolve()
-    workspace = directory / "project"
-    home = directory / "home"
+def launch(expected_version: str, model: str) -> int:
+    check_config()
+    if model not in FREE_MODEL_CANDIDATES:
+        raise ValueError("Model not on the reviewed free-model candidate list")
+    executable = shutil.which("opencode")
+    if not executable:
+        raise RuntimeError("OpenCode CLI missing; install a reviewed pinned @opencode/cli version")
+    installed_version(executable, expected_version)
+    root = Path(tempfile.mkdtemp(prefix="toad-opencode-v2-")).resolve()
+    workspace = root / "app"
     workspace.mkdir(mode=0o700)
-    home.mkdir(mode=0o700)
     (workspace / "opencode.jsonc").write_bytes(CONFIG.read_bytes())
-    # Freeze acceptance inputs before the first agent prompt. Read-only mode is
-    # an audit cue, not protection against commands running as the same user.
-    import hashlib
-    frozen = {}
-    for filename in ("CALCULATOR_MISSION.md", "calculator-acceptance.test.mjs"):
-        src = ROOT / "integrations" / "opencode-v2" / filename
-        dest = workspace / filename
-        payload = src.read_bytes()
-        dest.write_bytes(payload)
-        dest.chmod(0o444)
-        frozen[filename] = hashlib.sha256(payload).hexdigest()
-    print("Frozen calculator test SHA256:", frozen["calculator-acceptance.test.mjs"], flush=True)
-    print(f"Experiment directory: {directory}", flush=True)
-    print("No host containment: run ONLY on a disposable host with no secrets.", flush=True)
-    print("Approve each requested edit/shell command; choose a verified FREE model.", flush=True)
-    print("Stop: Ctrl+C. Inspect source/test evidence, then delete this directory manually.", flush=True)
-    code = subprocess.call([executable, "--standalone"], cwd=workspace, env=isolated_environment(home))
-    altered = [name for name, expected in frozen.items()
-               if not (workspace / name).is_file()
-               or hashlib.sha256((workspace / name).read_bytes()).hexdigest() != expected]
-    if altered:
-        raise RuntimeError(f"Frozen acceptance inputs were modified: {altered}")
-    return code
+    env = clean_environment(root)
+    print(f"Fresh experiment workspace: {workspace}", flush=True)
+    print(f"Verified CLI version: {expected_version}; selected candidate model: {model}", flush=True)
+    print("NOT a host sandbox. Verify current $0 pricing and privacy terms before any model call.", flush=True)
+    print("No robot files or credentials; approve individual shell and edit requests once only.", flush=True)
+    # mini supports --model and --standalone per official CLI documentation.
+    return subprocess.call([executable, "mini", "--standalone", "--model", model],
+                           cwd=workspace, env=env)
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Opt-in OpenCode V2 readiness and launch")
+    parser = argparse.ArgumentParser(description="Review or manually launch a disposable OpenCode V2 trial")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--validate-config", action="store_true", help="Offline policy and version-pin check")
-    group.add_argument("--check", action="store_true", help="Policy plus actual binary version check")
-    group.add_argument("--launch", action="store_true", help="Launch private interactive OpenCode experiment")
+    group.add_argument("--check", action="store_true", help="Static config check, no model call")
+    group.add_argument("--launch", action="store_true", help="Interactive launch after pinned-version check")
+    parser.add_argument("--expected-version", help="Exact installed version: 2.x.y (required on launch)")
+    parser.add_argument("--model", choices=FREE_MODEL_CANDIDATES,
+                        help="Explicit candidate-free model (required on launch)")
     args = parser.parse_args(argv)
     try:
-        validate_config()
-        pin = pinned_version()
-        if args.validate_config:
-            print(f"Reviewed policy and version pin valid ({pin}); runtime NOT tested")
+        check_config()
+        if not args.launch:
+            print("Configuration: approved ordered rules and hard-deny policies verified")
+            print("OpenCode executable: " + (shutil.which("opencode") or "not installed"))
+            print("Static preflight only: no runtime or actual security containment verified")
             return 0
-        executable = verify_binary(pin)
-        print(f"OpenCode executable verified: {executable} (version {pin})", flush=True)
-        if args.launch:
-            return launch(executable)
-        print("No model call, execution task, or app acceptance test performed")
-        return 0
-    except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
-        print(f"OpenCode preflight BLOCKED: {error}", file=sys.stderr)
-        return 2
+        if not args.expected_version or not args.model:
+            parser.error("--launch requires --expected-version and --model")
+        return launch(args.expected_version, args.model)
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+        parser.exit(2, f"OpenCode preflight BLOCKED: {exc}\n")
 
 
 if __name__ == "__main__":
