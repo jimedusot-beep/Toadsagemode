@@ -335,6 +335,7 @@
         if (text.length > 100000) throw Error('oversized');
         next = api.validateCatalog(JSON.parse(text));
       } catch (_) {
+        if (requestId !== fixtureGeneration) return;
         announce('Fixture import refused: invalid UTF-8, JSON or project data. Current projects are unchanged.', true);
         return;
       }
