@@ -259,7 +259,7 @@ class SageProjectToolTests(unittest.TestCase):
     def test_diff_failure_does_not_commit_head_or_revision(self):
         prior = set(self.tools.revisions.iterdir())
         with patch("toad_core.project_tools.difflib.unified_diff", side_effect=RuntimeError("diff failed")):
-            with self.assertRaisesRegex(RuntimeError, "diff failed"):
+            with self.assertRaisesRegex(PackageError, "diff preparation failed"):
                 self.tools.propose_edit("README.md", "# Changed\n", expected_revision=self.baseline)
         self.assertEqual(self.tools.status()["revision"], self.baseline)
         self.assertEqual(set(self.tools.revisions.iterdir()), prior)
