@@ -53,7 +53,9 @@ class FreeStudioBundlesTests(unittest.TestCase):
             with zipfile.ZipFile(out / STUDIO_NAME) as archive:
                 self.assertEqual(set(archive.namelist()),
                                  {"index.html","styles.css","app.js","templates.json","v2.css","v2.js","v3.css","v3.js",
-                                  "explorer.html","explorer.css","explorer.js","explorer-adapter.js","explorer-fixtures.json"} |
+                                  "explorer.html","explorer.css","explorer.js","explorer-adapter.js","explorer-fixtures.json",
+                                  "sagecode-contract.html","sagecode-contract.css","sagecode-contract.js",
+                                  "sagecode-contract-adapter.js","sagecode-contract-fixture.json"} |
                                  {"previews/"+kind+"-"+theme+"/index.html"
                                   for kind in ("tasks","notes","flashcards")
                                   for theme in ("forest","midnight")})
@@ -61,6 +63,11 @@ class FreeStudioBundlesTests(unittest.TestCase):
                 self.assertIn("Open Project Explorer demo",archive.read("index.html").decode())
                 self.assertIn("Local fixture demonstration",archive.read("explorer.html").decode())
                 self.assertIn("fixture-only",archive.read("explorer.js").decode().lower())
+                self.assertIn("Fixture only",archive.read("sagecode-contract.html").decode())
+                contract = json.loads(archive.read("sagecode-contract-fixture.json"))
+                self.assertEqual(contract["status"]["schema"],"sagecode-project-status-v1")
+                self.assertFalse(contract["status"]["release_allowed"])
+                self.assertIsNone(contract["status"]["test_evidence"])
                 self.assertEqual(json.loads(archive.read("templates.json")),expected_catalog())
             self.assertEqual(
                 {p.name for p in (out/"flashcards-site").iterdir()},
@@ -69,7 +76,9 @@ class FreeStudioBundlesTests(unittest.TestCase):
             self.assertEqual(
                 {p.name for p in (out/"browser-studio").iterdir()},
                 {"index.html","styles.css","app.js","templates.json","v2.css","v2.js","v3.css","v3.js",
-                 "explorer.html","explorer.css","explorer.js","explorer-adapter.js","explorer-fixtures.json","previews"}
+                 "explorer.html","explorer.css","explorer.js","explorer-adapter.js","explorer-fixtures.json",
+                                  "sagecode-contract.html","sagecode-contract.css","sagecode-contract.js",
+                                  "sagecode-contract-adapter.js","sagecode-contract-fixture.json","previews"}
             )
             self.assertEqual(
                 len(list((out/"browser-studio"/"previews").glob("*/index.html"))), 6

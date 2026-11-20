@@ -29,6 +29,9 @@ STUDIO_FILES = (
     "v2.css", "v2.js", "v3.css", "v3.js",
     "explorer.html", "explorer.css", "explorer-adapter.js",
     "explorer.js", "explorer-fixtures.json",
+    "sagecode-contract.html", "sagecode-contract.css",
+    "sagecode-contract.js", "sagecode-contract-adapter.js",
+    "sagecode-contract-fixture.json",
 )
 TEMPLATES = ROOT / "toad_core" / "studio_templates"
 
