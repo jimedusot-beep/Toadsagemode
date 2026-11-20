@@ -7,6 +7,7 @@ The trusted caller, never a model response, supplies ``allowed_project_ids``.
 from __future__ import annotations
 
 import copy
+from contextlib import contextmanager
 import difflib
 import hashlib
 import json
@@ -28,6 +29,9 @@ _MAX_REVISIONS = 40
 _MAX_DOCUMENT_BYTES = 600_000
 _MAX_READ_BYTES = 16_000
 _MAX_DIFF_BYTES = 30_000
+# Avoid quadratic or excessive source comparison before touching persistent HEAD.
+_MAX_DIFF_COMPARISONS = 1_000_000
+_MAX_DIFF_LINES = 2_000
 
 
 def _validate_source_path(path):
@@ -93,13 +97,23 @@ def _create_exclusive(path, payload):
     if len(data) > _MAX_DOCUMENT_BYTES:
         raise PackageError("SageCode record exceeds size limit")
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    created = False
     try:
         descriptor = os.open(path, flags, 0o600)
+        created = True
         with os.fdopen(descriptor, "wb") as stream:
             stream.write(data)
             stream.flush()
             os.fsync(stream.fileno())
     except (OSError, ValueError) as exc:
+        # A short write or fsync failure must not leave a corrupt immutable
+        # revision that later prevents a valid retry. Do not delete a record
+        # if the exclusive open never succeeded (it belongs to someone else).
+        if created:
+            try:
+                path.unlink()
+            except OSError:
+                pass
         raise PackageError("Could not create exclusive SageCode record") from exc
 
 
@@ -113,6 +127,53 @@ def _replace_head(path, payload):
     finally:
         if temporary.exists():
             temporary.unlink()
+
+
+@contextmanager
+def _mutation_lock(project):
+    """Fail-closed cross-process writer claim; stale claims require owner review.
+
+    A normal release unlinks the lock. After a process crash the lock remains,
+    and no automatic stale-lock recovery is attempted. The trusted operator
+    must determine whether a previous mutation was interrupted before removal.
+    This is designed for a local private filesystem, not a distributed store.
+    """
+    lock = project / ".sagecode-write.lock"
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(lock, flags, 0o600)
+    except OSError as exc:
+        raise PackageError("SageCode writer busy or interrupted; manual review required") from exc
+    os.close(fd)
+    try:
+        yield
+    finally:
+        try:
+            lock.unlink()
+        except OSError as exc:
+            raise PackageError("SageCode writer lock cleanup failed; manual review required") from exc
+
+
+def _bounded_diff(path, before, after):
+    """Prepare a review diff before mutation, with a bounded comparison cost."""
+    previous = before.splitlines(keepends=True)
+    proposed = after.splitlines(keepends=True)
+    if (len(previous) > _MAX_DIFF_LINES or len(proposed) > _MAX_DIFF_LINES
+            or len(previous) * len(proposed) > _MAX_DIFF_COMPARISONS):
+        # An absent diff plus truncated=True means full before/after review is
+        # mandatory. It NEVER means the edit was unchanged.
+        return "", True
+    changes = difflib.unified_diff(previous, proposed, fromfile="a/" + path, tofile="b/" + path)
+    # A 250 kB source file can produce much more output than a review panel
+    # should display; stop collecting once the cap is exceeded.
+    output = bytearray()
+    for fragment in changes:
+        encoded = fragment.encode("utf-8")
+        remaining = _MAX_DIFF_BYTES + 1 - len(output)
+        if remaining <= 0:
+            break
+        output.extend(encoded[:remaining])
+    return bytes(output[:_MAX_DIFF_BYTES]).decode("utf-8", errors="ignore"), len(output) > _MAX_DIFF_BYTES
 
 
 class SageProjectTools:
@@ -302,45 +363,64 @@ class SageProjectTools:
             raise PackageError("Invalid or oversized SageCode edit") from exc
         if content_size > MAX_FILE_BYTES:
             raise PackageError("Invalid or oversized SageCode edit")
-        current = self._check_expected(expected_revision)
-        before = self._file(current, path)["content"]
-        if before == content:
-            return {"project_id": self.project_id, "revision": current["revision"],
-                    "unchanged": True, "diff": "", "truncated": False, "verification": "unverified"}
-        new_manifest = copy.deepcopy(current["manifest"])
-        for file in new_manifest["files"]:
-            if file["path"] == path:
-                file["content"] = content
-                break
-        new_manifest = _validate_manifest(new_manifest)
-        new_record = {"schema": "sagecode-revision-v1", "project_id": self.project_id,
-                      "parent": current["revision"], "manifest": new_manifest}
-        new_record["revision"] = _record_digest(new_record)
-        target_path = self.revisions / (new_record["revision"] + ".json")
-        if target_path.exists() or target_path.is_symlink():
-            # Re-proposing an identical edit after restore may revisit an
-            # existing content-addressed revision. Verify it before reuse.
-            if self._read_revision(new_record["revision"]) != new_record:
-                raise PackageError("Conflicting SageCode revision record")
-        else:
-            if len(list(self.revisions.iterdir())) >= _MAX_REVISIONS:
-                raise PackageError("SageCode revision limit reached")
-            _create_exclusive(target_path, new_record)
-        _replace_head(self.project / "head.json", {"revision": new_record["revision"]})
-        diff = "".join(difflib.unified_diff(before.splitlines(keepends=True), content.splitlines(keepends=True),
-                                            fromfile="a/" + path, tofile="b/" + path))
-        diff_bytes = diff.encode("utf-8")
-        return {"project_id": self.project_id, "revision": new_record["revision"],
-                "parent_revision": current["revision"], "unchanged": False,
-                "diff": diff_bytes[:_MAX_DIFF_BYTES].decode("utf-8", errors="ignore"),
-                "truncated": len(diff_bytes) > _MAX_DIFF_BYTES, "verification": "unverified",
-                "review_status": "pending_review", "release_allowed": False}
+        self._check_layout()
+        with _mutation_lock(self.project):
+            current = self._check_expected(expected_revision)
+            before = self._file(current, path)["content"]
+            if before == content:
+                return {"project_id": self.project_id, "revision": current["revision"],
+                        "unchanged": True, "diff": "", "truncated": False, "verification": "unverified"}
+            # Generate review evidence before writing any revision or HEAD.
+            # A failed/expensive diff must not commit a change without a response.
+            try:
+                diff, diff_truncated = _bounded_diff(path, before, content)
+            except (RuntimeError, ValueError, UnicodeError, MemoryError) as exc:
+                raise PackageError("SageCode diff preparation failed; no changes made") from exc
+            new_manifest = copy.deepcopy(current["manifest"])
+            for file in new_manifest["files"]:
+                if file["path"] == path:
+                    file["content"] = content
+                    break
+            new_manifest = _validate_manifest(new_manifest)
+            new_record = {"schema": "sagecode-revision-v1", "project_id": self.project_id,
+                          "parent": current["revision"], "manifest": new_manifest}
+            new_record["revision"] = _record_digest(new_record)
+            target_path = self.revisions / (new_record["revision"] + ".json")
+            created_revision = False
+            if target_path.exists() or target_path.is_symlink():
+                # A restored snapshot can legitimately revisit a prior
+                # immutable revision. Never reuse an invalid stored record.
+                if self._read_revision(new_record["revision"]) != new_record:
+                    raise PackageError("Conflicting SageCode revision record")
+            else:
+                if len(list(self.revisions.iterdir())) >= _MAX_REVISIONS:
+                    raise PackageError("SageCode revision limit reached")
+                _create_exclusive(target_path, new_record)
+                created_revision = True
+            try:
+                _replace_head(self.project / "head.json", {"revision": new_record["revision"]})
+            except Exception:
+                # A failed HEAD move must not consume one of the bounded
+                # immutable revision slots or leave a confusing orphan. Do
+                # not remove an existing (reused) revision record.
+                if created_revision:
+                    try:
+                        target_path.unlink()
+                    except OSError:
+                        pass
+                raise
+            return {"project_id": self.project_id, "revision": new_record["revision"],
+                    "parent_revision": current["revision"], "unchanged": False,
+                    "diff": diff, "truncated": diff_truncated, "verification": "unverified",
+                    "review_status": "pending_review", "release_allowed": False}
 
     def restore(self, revision, *, expected_revision):
-        current = self._check_expected(expected_revision)
-        target = self._validated_revision(revision)
-        if target["revision"] != current["revision"]:
-            _replace_head(self.project / "head.json", {"revision": target["revision"]})
-        return {"project_id": self.project_id, "revision": target["revision"],
-                "previous_revision": current["revision"], "restored": True,
-                "verification": "unverified", "review_status": "pending_review", "release_allowed": False}
+        self._check_layout()
+        with _mutation_lock(self.project):
+            current = self._check_expected(expected_revision)
+            target = self._validated_revision(revision)
+            if target["revision"] != current["revision"]:
+                _replace_head(self.project / "head.json", {"revision": target["revision"]})
+            return {"project_id": self.project_id, "revision": target["revision"],
+                    "previous_revision": current["revision"], "restored": True,
+                    "verification": "unverified", "review_status": "pending_review", "release_allowed": False}
