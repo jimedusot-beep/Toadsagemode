@@ -59,6 +59,9 @@ async function open(page,url) {
     assert.match(await page.locator('#sage-source').innerText(),/Hello, SageCode!/);
     assert.equal(await source.getAttribute('aria-current'),'true');
     assert.equal(await page.locator('#sage-source').evaluate(el=>document.activeElement===el),true);
+    // Enter intentionally moves focus to source; refocus the file button
+    // before asserting its :focus-visible outline.
+    await source.focus();
     const outline=await source.evaluate(el=>getComputedStyle(el).outlineStyle);
     assert.notEqual(outline,'none');
     assert.match(await page.locator('#sage-search-state').innerText(),/Example term.*Hello/);
