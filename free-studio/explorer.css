@@ -1,0 +1,51 @@
+/* Sage Studio Project Explorer — the existing Free Studio visual system, scoped. */
+.explorer-shell{max-width:1350px}
+.explorer-back{display:inline-block;margin-top:10px;min-height:44px;line-height:44px;font-weight:700}
+.explorer-warning{border-color:#8a986d;background:#213526}
+.explorer-warning p{overflow-wrap:anywhere}
+#explorer-notice{color:#daf1da;font-weight:650;min-height:1.5rem;overflow-wrap:anywhere}
+#explorer-notice.error{color:#ffd0bd}
+.explorer-layout{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:16px;align-items:start}
+.explorer-content,.explorer-navigation{min-width:0}
+.explorer-layout .panel{margin:0 0 16px}
+.explorer-navigation{position:sticky;top:12px}
+#explorer-project-list,#explorer-file-list{list-style:none;padding:0;margin:0}
+#explorer-project-list li,#explorer-file-list li{margin:7px 0}
+.explorer-project-button{display:block;width:100%;text-align:left;background:#0e2116;color:#ecf7ed;border:1px solid #557e61;border-radius:12px;padding:12px;min-height:54px;overflow-wrap:anywhere}
+.explorer-project-button strong,.explorer-project-button small{display:block}
+.explorer-project-button small{font-size:.76rem;color:#bfd8c4;margin-top:4px}
+.explorer-project-button[aria-pressed="true"],.explorer-file-button[aria-current="true"]{border-color:#c6f4cd;background:#254833}
+#explorer-project-title{font-size:1.1rem;margin:14px 0 2px;overflow-wrap:anywhere}
+.explorer-browse-grid{display:grid;grid-template-columns:minmax(140px,34%) minmax(0,1fr);gap:14px;min-width:0}
+.explorer-file-panel,.explorer-source-panel{min-width:0}
+.explorer-file-panel{border:1px solid #476954;border-radius:12px;padding:12px}
+.explorer-file-panel h3,.explorer-source-panel h3,.explorer-diff-grid h3{font-size:.92rem;margin:0 0 9px}
+.explorer-file-panel ul ul{padding-left:12px;margin-left:5px;border-left:1px solid #507258}
+.explorer-file-folder{color:#bed8c6;font-size:.81rem;font-weight:800;overflow-wrap:anywhere}
+.explorer-file-button{width:100%;font-size:.83rem;text-align:left;min-height:44px;padding:8px 10px;background:#12291b;color:#e5f8e8;border:1px solid #4b7455;border-radius:9px;overflow-wrap:anywhere}
+.explorer-path{font-size:.8rem;color:#c7e0cc;margin:0 0 9px;overflow-wrap:anywhere}
+.explorer-content pre{font:400 .82rem/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;background:#0d1b13;border:1px solid #496c54;border-radius:11px;padding:13px;white-space:pre;max-height:345px;max-width:100%;overflow:auto;tab-size:2}
+.explorer-content pre:focus-visible{outline:3px solid #ffd78b;outline-offset:3px}
+.explorer-diff-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:13px;min-width:0}
+.explorer-diff-grid section{min-width:0}
+.explorer-diff-grid pre{min-height:120px;max-height:300px;margin-top:3px}
+.explorer-diff-grid .diff-line{display:block;min-height:1.5em;width:max-content;min-width:100%}
+.explorer-diff-grid .diff-added{background:#234e34;color:#ddffe5}
+.explorer-diff-grid .diff-removed{background:#61362f;color:#ffe9e4}
+.explorer-diff-grid .diff-same{color:#cce4d1}
+.explorer-actions{display:flex;gap:12px;flex-wrap:wrap}
+.explorer-actions button{flex:1 1 190px;min-width:0}
+#explorer-decision{color:#d3efd8;min-height:1.4rem;overflow-wrap:anywhere}
+.chip[data-state="failed"],.chip[data-state="blocked"]{border-color:#d0a399;color:#ffe0d7}
+.chip[data-state="testing"],.chip[data-state="untested"],.chip[data-state="draft"]{border-color:#d0ba78;color:#ffecae}
+.chip[data-state="verified"]{border-color:#a2d5af;color:#d7ffe1}
+#explorer-revision-summary{overflow-wrap:anywhere}
+@media(max-width:850px){.explorer-layout{grid-template-columns:1fr}.explorer-navigation{position:static}.explorer-browse-grid{grid-template-columns:minmax(160px,38%) minmax(0,1fr)}}
+@media(max-width:550px){.explorer-browse-grid,.explorer-diff-grid{grid-template-columns:1fr}.explorer-file-panel{max-height:270px;overflow:auto}.explorer-content pre{max-height:260px}.explorer-actions{flex-direction:column}.explorer-actions button{width:100%}}
+
+/* Local JSON review never grants production import capability. */
+.explorer-import-box{border-top:1px solid #567c61;margin-top:20px;padding-top:15px}
+.explorer-import-box h3{font-size:.96rem;margin:0}
+.explorer-import-box label{display:block;font-weight:750;margin:10px 0 5px}
+.explorer-import-box input[type=file]{max-width:100%;min-width:0}
+.explorer-import-box button{width:100%;margin-top:10px;padding:9px 10px}

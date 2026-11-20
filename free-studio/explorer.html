@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Sage Studio — Project Explorer V1</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="v2.css">
+  <link rel="stylesheet" href="explorer.css">
+  <script src="explorer-adapter.js" defer></script>
+  <script src="explorer.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#explorer-project-list">Skip to example projects</a>
+  <main class="shell explorer-shell">
+    <header class="masthead">
+      <div class="logo" aria-hidden="true">🐸</div>
+      <div>
+        <p class="eyebrow">TOAD SAGE / SAGE STUDIO</p>
+        <h1>Project Explorer V1</h1>
+        <p class="subtitle">Browse source, compare proposed edits and review example test results.</p>
+        <a class="explorer-back" href="./index.html">← Back to Free App Studio</a>
+      </div>
+    </header>
+
+    <section class="panel explorer-warning" aria-labelledby="fixture-heading">
+      <div class="section-heading">
+        <h2 id="fixture-heading">Local fixture demonstration</h2>
+        <span class="chip">Not connected to AI</span>
+      </div>
+      <p>Everything displayed here is <strong>sample project data</strong>. Source files are read as text, not executed. The sample test labels are not real results. Approval or rejection affects only this open page; it cannot modify GitHub, source files or production code.</p>
+      <p class="hint">Agent A's SageCode backend response contract is not yet published. The source adapter is isolated and has no live API endpoints, no network requests beyond the same-origin fixture JSON, and no persistent decisions.</p>
+    </section>
+
+    <p id="explorer-notice" role="status" aria-live="polite">Loading local example project catalog…</p>
+    <button id="explorer-retry" type="button" class="secondary" hidden>Retry loading example data</button>
+
+    <div class="explorer-layout">
+      <section class="panel explorer-navigation" aria-labelledby="explorer-project-heading">
+        <div class="section-heading">
+          <h2 id="explorer-project-heading">Projects</h2>
+          <span class="chip" id="explorer-count">0 examples</span>
+        </div>
+        <p class="hint">Choose an example project to inspect.</p>
+        <ul id="explorer-project-list" aria-label="Example projects"></ul>
+        <div class="explorer-import-box">
+          <h3>Optional fixture import</h3>
+          <p class="hint">Load a local JSON example in the exact fixture schema. This replaces the displayed demo data in page memory only. It does not import a real project or run any code.</p>
+          <label for="explorer-import-file">Example fixture JSON file</label>
+          <input id="explorer-import-file" type="file" accept=".json,application/json">
+          <button id="explorer-import" type="button" class="secondary" disabled>Inspect selected fixture JSON</button>
+          <button id="explorer-reset" type="button" class="secondary">Restore built-in examples</button>
+        </div>
+      </section>
+
+      <div class="explorer-content">
+        <section class="panel" aria-labelledby="explorer-current-heading">
+          <div class="section-heading">
+            <h2 id="explorer-current-heading">Project details</h2>
+            <span id="explorer-project-state" class="chip" data-state="blocked">Fixture: not loaded</span>
+          </div>
+          <h3 id="explorer-project-title">No project selected</h3>
+          <p id="explorer-project-summary" class="hint">Select a project to inspect its files and proposed revision.</p>
+          <div class="explorer-browse-grid">
+            <nav aria-label="Project file navigation" class="explorer-file-panel">
+              <h3>Source file tree</h3>
+              <ul id="explorer-file-list"></ul>
+              <p id="explorer-empty" class="hint">Choose a project to see its files.</p>
+            </nav>
+            <section aria-labelledby="explorer-source-heading" class="explorer-source-panel">
+              <h3 id="explorer-source-heading">Source (read-only)</h3>
+              <p id="explorer-selected-path" class="explorer-path">No file selected</p>
+              <pre id="explorer-source" tabindex="0" aria-label="Selected source code, read only">Select a file to read its source.</pre>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="explorer-revision-heading">
+          <div class="section-heading">
+            <h2 id="explorer-revision-heading">Proposed revision</h2>
+            <span id="explorer-revision-state" class="chip" data-state="blocked">Fixture: none</span>
+          </div>
+          <p id="explorer-revision-summary" class="hint">No proposal loaded.</p>
+          <div class="explorer-diff-grid">
+            <section aria-labelledby="explorer-before-heading">
+              <h3 id="explorer-before-heading">Before</h3>
+              <pre id="explorer-before" tabindex="0" aria-label="Original source before proposed change">No proposed revision</pre>
+            </section>
+            <section aria-labelledby="explorer-after-heading">
+              <h3 id="explorer-after-heading">After</h3>
+              <pre id="explorer-after" tabindex="0" aria-label="Proposed source after change">No proposed revision</pre>
+            </section>
+          </div>
+          <p class="hint">Colored line backgrounds and +/− marks identify differing text. This display does not execute, apply or validate changes.</p>
+          <div class="explorer-actions">
+            <button id="explorer-approve" type="button" class="primary" disabled>Approve demo revision</button>
+            <button id="explorer-reject" type="button" class="secondary" disabled>Reject demo revision</button>
+          </div>
+          <p id="explorer-decision" role="status" aria-live="polite">No demo decision recorded.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="explorer-tests-heading">
+          <div class="section-heading">
+            <h2 id="explorer-tests-heading">Test results and blockers</h2>
+            <span id="explorer-test-state" class="chip" data-state="blocked">Fixture: no evidence</span>
+          </div>
+          <h3>Project test output</h3>
+          <pre id="explorer-test-output" tabindex="0" aria-label="Example project test output">No example test output loaded.</pre>
+          <h3>Proposed revision test output</h3>
+          <pre id="explorer-revision-output" tabindex="0" aria-label="Example revision test output">No revision test output available.</pre>
+          <p class="hint">All output here comes from fixture JSON. It is not a live terminal, executable test runner or independent evidence of verification.</p>
+        </section>
+      </div>
+    </div>
+    <footer>Fixture-only explorer · In-memory decisions · Read-only source · No model execution or deployment</footer>
+  </main>
+</body>
+</html>
