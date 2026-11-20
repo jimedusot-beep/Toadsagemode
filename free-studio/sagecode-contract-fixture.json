@@ -1,0 +1,84 @@
+{
+  "fixture_schema": "sagecode-ui-fixture-v1",
+  "status": {
+    "schema": "sagecode-project-status-v1",
+    "project_id": "example-project",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "baseline_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "verification": "unverified",
+    "review_status": "pending_review",
+    "executed": false,
+    "approved": false,
+    "release_allowed": false,
+    "test_evidence": null
+  },
+  "tree": {
+    "project_id": "example-project",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "entries": [
+      {
+        "path": "README.md",
+        "kind": "file",
+        "bytes": 69,
+        "sha256": "b117d5b9b05bf1fd8614b51c56b9c35e60305e53c29265b09e5d0051a202c2b9"
+      },
+      {
+        "path": "src",
+        "kind": "directory"
+      },
+      {
+        "path": "src/main.py",
+        "kind": "file",
+        "bytes": 26,
+        "sha256": "bfb2f05d8b3b43f1ce13185a0cc011fff85df04e563a050c1b904d062322a15e"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "project_id": "example-project",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "path": "README.md",
+      "start_line": 1,
+      "total_lines": 2,
+      "content": "# Example project\nThis is fixture source, not a real model response.\n",
+      "truncated": false,
+      "sha256": "b117d5b9b05bf1fd8614b51c56b9c35e60305e53c29265b09e5d0051a202c2b9"
+    },
+    {
+      "project_id": "example-project",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "path": "src/main.py",
+      "start_line": 1,
+      "total_lines": 1,
+      "content": "print(\"Hello, SageCode!\")\n",
+      "truncated": false,
+      "sha256": "bfb2f05d8b3b43f1ce13185a0cc011fff85df04e563a050c1b904d062322a15e"
+    }
+  ],
+  "search": {
+    "project_id": "example-project",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "term": "Hello",
+    "matches": [
+      {
+        "path": "src/main.py",
+        "line": 1,
+        "snippet": "print(\"Hello, SageCode!\")",
+        "kind": "content"
+      }
+    ],
+    "limited": false
+  },
+  "proposal": {
+    "project_id": "example-project",
+    "revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "parent_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "unchanged": false,
+    "diff": "--- a/src/main.py\n+++ b/src/main.py\n@@ -1 +1 @@\n-print(\"Hello, SageCode!\")\n+print(\"Hello, Sage Studio!\")\n",
+    "truncated": false,
+    "verification": "unverified",
+    "review_status": "pending_review",
+    "release_allowed": false
+  }
+}
