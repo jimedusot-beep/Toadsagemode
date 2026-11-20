@@ -1,0 +1,24 @@
+/* SageCode contract sample inspector, reusing Free Studio and Explorer styling. */
+.sage-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+.sage-layout .panel{margin:0 0 16px}
+.sage-meta{margin:15px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sage-meta div{background:#102117;border:1px solid #456851;border-radius:10px;padding:10px;min-width:0}
+.sage-meta dt{font-size:.77rem;color:#b6d2be;margin-bottom:5px;font-weight:750}
+.sage-meta dd{font:400 .8rem/1.55 ui-monospace,Consolas,monospace;margin:0;overflow-wrap:anywhere}
+.sage-info{overflow-wrap:anywhere;font-weight:700}
+.sage-file-layout{display:grid;grid-template-columns:minmax(160px,32%) minmax(0,1fr);gap:14px;margin-top:15px}
+.sage-file-layout nav{border:1px solid #4b7056;border-radius:12px;padding:12px;min-width:0}
+.sage-file-layout section{min-width:0}
+.sage-file-layout section h3{font-size:.94rem;margin:0}
+.sage-tree,.sage-search-results{list-style:none;margin:0;padding:0;min-width:0}
+.sage-tree li,.sage-search-results li{margin:7px 0;min-width:0}
+.sage-directory{font-size:.84rem;color:#c7e4cb;font-weight:800;overflow-wrap:anywhere}
+#sage-source,#sage-diff{font:400 .82rem/1.6 ui-monospace,Consolas,monospace;background:#0b1a11;color:#e9f7ec;border:1px solid #527359;border-radius:12px;padding:14px;max-height:360px;overflow:auto;white-space:pre;max-width:100%;tab-size:2}
+#sage-source:focus-visible,#sage-diff:focus-visible{outline:3px solid #ffd78b;outline-offset:3px}
+#sage-source-name,#sage-source-state,#sage-search-state,#sage-source-limits,#sage-proposal-summary,#sage-proposal-warning{overflow-wrap:anywhere}
+#sage-source-state,#sage-search-state{font-size:.86rem;color:#d5f1da;min-height:1.4em}
+.sage-search-results{max-height:280px;overflow:auto}
+#sage-retry{margin:9px 0 18px;padding:9px 18px}
+#sage-notice{font-weight:700;overflow-wrap:anywhere}
+#sage-notice.error{color:#ffd2c4}
+@media(max-width:650px){.sage-meta,.sage-file-layout{grid-template-columns:1fr}.sage-file-layout nav{max-height:260px;overflow:auto}}
