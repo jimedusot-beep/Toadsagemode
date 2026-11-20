@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import secrets
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
@@ -24,6 +25,11 @@ from .web_codegen import MAX_REQUEST_BYTES, QuarantinedWebGenerator
 ROOT = Path(__file__).resolve().parents[1] / "owner-ai-studio"
 MAX_BODY = MAX_REQUEST_BYTES + 512
 TOKEN_MIN_LENGTH = 32
+# Bound private-HTTPS forwarded clients, including incomplete HTTP requests.
+MAX_CONCURRENT_REQUESTS = 8
+HEADER_IDLE_TIMEOUT_SECONDS = 8.0
+BODY_READ_DEADLINE_SECONDS = 8.0
+BODY_READ_CHUNK_BYTES = 2048
 ASSETS = {
     "/": ("text/html; charset=utf-8", "index.html"),
     "/index.html": ("text/html; charset=utf-8", "index.html"),
@@ -35,6 +41,7 @@ ASSETS = {
 class OwnerStudioHTTP(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
+    request_queue_size = MAX_CONCURRENT_REQUESTS
 
     def __init__(self, address, *, workspace=None, model=None,
                  owner_token=None, max_calls=1):
@@ -53,10 +60,51 @@ class OwnerStudioHTTP(ThreadingHTTPServer):
         self.max_calls = max_calls
         self.used_calls = 0
         self.call_lock = threading.Lock()
+        self.request_slots = threading.BoundedSemaphore(MAX_CONCURRENT_REQUESTS)
         super().__init__(address, OwnerStudioHandler)
+
+    def process_request(self, request, client_address):
+        """Refuse excess clients before allocating another request thread."""
+        if not self.request_slots.acquire(blocking=False):
+            self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request, client_address)
+        except BaseException:
+            self.request_slots.release()
+            raise
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self.request_slots.release()
 
 
 class OwnerStudioHandler(BaseHTTPRequestHandler):
+    def setup(self):
+        # BaseHTTPRequestHandler has no request timeout by default.
+        self.request.settimeout(HEADER_IDLE_TIMEOUT_SECONDS)
+        super().setup()
+
+    def _read_body(self, size):
+        """Enforce an overall body deadline, including slow trickle attacks."""
+        body = bytearray()
+        deadline = time.monotonic() + BODY_READ_DEADLINE_SECONDS
+        try:
+            while len(body) < size:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError("Request body deadline exceeded")
+                self.connection.settimeout(min(remaining, HEADER_IDLE_TIMEOUT_SECONDS))
+                chunk = self.rfile.read1(min(BODY_READ_CHUNK_BYTES, size - len(body)))
+                if not chunk:
+                    raise ValueError("Incomplete request body")
+                body.extend(chunk)
+            return bytes(body)
+        finally:
+            self.connection.settimeout(HEADER_IDLE_TIMEOUT_SECONDS)
+
     # No default access logs: goals, tokens, URLs and source must never leak.
     def log_message(self, *_):
         pass
@@ -139,8 +187,13 @@ class OwnerStudioHandler(BaseHTTPRequestHandler):
         size = self.headers.get("Content-Length", "")
         if not size.isdigit() or not 1 <= int(size) <= MAX_BODY:
             return self._reply(413, {"error": "Missing or oversized request"})
-        body = self.rfile.read(int(size))
-        if len(body) != int(size):
+        try:
+            body = self._read_body(int(size))
+        except TimeoutError:
+            self.close_connection = True
+            return self._reply(408, {"error": "Request body deadline exceeded"})
+        except (OSError, ValueError):
+            self.close_connection = True
             return self._reply(400, {"error": "Incomplete request"})
         try:
             request = strict_json(body.decode("utf-8"))
