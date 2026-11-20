@@ -372,7 +372,10 @@ class SageProjectTools:
                         "unchanged": True, "diff": "", "truncated": False, "verification": "unverified"}
             # Generate review evidence before writing any revision or HEAD.
             # A failed/expensive diff must not commit a change without a response.
-            diff, diff_truncated = _bounded_diff(path, before, content)
+            try:
+                diff, diff_truncated = _bounded_diff(path, before, content)
+            except (RuntimeError, ValueError, UnicodeError, MemoryError) as exc:
+                raise PackageError("SageCode diff preparation failed; no changes made") from exc
             new_manifest = copy.deepcopy(current["manifest"])
             for file in new_manifest["files"]:
                 if file["path"] == path:
