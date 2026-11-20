@@ -8,7 +8,7 @@ The existing `ControlledAgent` remains the only agent loop. A trusted Python con
 
 Bound agents receive **exactly five additional source-only actions**: `project_status`, `project_tree`, `project_read`, `project_search`, and `project_propose_edit`. Each accepts only its own documented fields and uses the V1 limits. For edits, a matching `expected_revision` is mandatory; stale edits refuse to update the source pointer. Source-only observations explicitly say `executed:false`, `approved:false`, `verification:"unverified"`, and `release_allowed:false`.
 
-Unbound agents **cannot** use project actions. The model cannot select a workspace, authorize another project, change policy, restore a revision, grant approvals, run a shell, install packages, contact a server, or execute code through these tools. `project_restore` deliberately remains an **operator-only** V1 Python operation. Project-bound `finish` always remains **unverified**, even if the original candidate has a Docker test receipt, because that receipt cannot establish correctness of a separately proposed project revision. The original candidate and installed abilities remain unchanged.
+Unbound agents **cannot** use project actions. **Project-bound sessions expose only the five source tools and `finish`; legacy candidate edit/test actions are unavailable in that mode.** This prevents a test receipt for the original candidate being mistaken for verification of a different project revision. The model cannot select a workspace, authorize another project, change policy, restore a revision, grant approvals, run a shell, install packages, contact a server, or execute code through these tools. `project_restore` deliberately remains an **operator-only** V1 Python operation. Project-bound `finish` always remains **unverified**, even if the original candidate has a Docker test receipt, because that receipt cannot establish correctness of a separately proposed project revision. The original candidate and installed abilities remain unchanged.
 
 ## Trusted local integration (not a browser endpoint)
 
@@ -31,7 +31,7 @@ finally:
 ## Results and threats
 
 - The adapter never executes or previews source. It does not replace the Docker sandbox or verify generated programs.
-- Existing `ACTIONS` remain available to the original candidate-bound agent; no new global host filesystem access is introduced.
+- Existing candidate `ACTIONS` remain available to **unbound, legacy** agent trajectories; project-bound trajectories have a separate source-only allowlist. No new global host filesystem access is introduced.
 - Existing checkpoint logic prevents replay of an uncertain action after a crash; a restored bound agent must supply the same trusted project object.
 - Per-trajectory model call and wall-clock limits remain intact.
 - **Single-writer constraint remains:** V1's expected-revision check is not an interprocess atomic lock; do not run parallel agents against the same project until a genuine owner-authorized locking layer is designed and tested.
