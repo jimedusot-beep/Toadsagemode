@@ -72,6 +72,14 @@ class OwnerGatewayNetworkLimitTests(unittest.TestCase):
         self.assertEqual(self.server.used_calls, 0)
         self.assertEqual(self.model.calls, 0)
 
+    def test_excessive_numeric_content_length_is_rejected_before_parsing(self):
+        with self._socket() as connection:
+            connection.sendall(self._request_head("9" * 10000))
+            response = connection.recv(4096)
+        self.assertIn(b"HTTP/1.0 413", response)
+        self.assertEqual(self.server.used_calls, 0)
+        self.assertEqual(self.model.calls, 0)
+
     def test_body_deadline_returns_408_without_model_request(self):
         with mock.patch.object(owner_gateway, "BODY_READ_DEADLINE_SECONDS", 0.2):
             with self._socket() as connection:
