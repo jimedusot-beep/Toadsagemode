@@ -75,6 +75,10 @@ class SageCodeAgentIntegrationTests(unittest.TestCase):
         self.assertEqual(prompt["project_context"]["project_id"], "sagecode-example")
         self.assertIn("project_propose_edit", prompt["allowed_actions"])
         self.assertNotIn("shell", prompt["allowed_actions"])
+        self.assertNotIn("test_candidate", prompt["allowed_actions"])
+        self.assertNotIn("propose_edit", prompt["allowed_actions"])
+        self.assertNotIn("read_file", prompt["allowed_actions"])
+        self.assertEqual(prompt["allowed_actions"][-1], "finish")
 
     def test_unbound_candidate_agent_cannot_select_project_tools(self):
         agent = ControlledAgent(self.engine, "plain-v2", candidate_id=self.candidate_id,
@@ -123,6 +127,9 @@ class SageCodeAgentIntegrationTests(unittest.TestCase):
         for i, action in enumerate((
             {"action": "project_restore", "revision": self.baseline},
             {"action": "shell", "command": "id"},
+            {"action": "test_candidate", "candidate_id": self.candidate_id},
+            {"action": "propose_edit", "candidate_id": self.candidate_id, "path": "src/main.py",
+             "content": "print('unsafe candidate modification')\\n"},
             {"action": "project_read", "path": "README.md", "policy": "write"},
             {"action": "project_status", "project_id": "other-project"},
         )):
