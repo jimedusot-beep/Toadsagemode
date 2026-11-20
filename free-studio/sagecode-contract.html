@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Sage Studio — SageCode Contract Inspector</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="v2.css">
+  <link rel="stylesheet" href="explorer.css">
+  <link rel="stylesheet" href="sagecode-contract.css">
+  <script src="sagecode-contract-adapter.js" defer></script>
+  <script src="sagecode-contract.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#sage-tree">Skip to source files</a>
+  <main class="shell explorer-shell">
+    <header class="masthead">
+      <div class="logo" aria-hidden="true">🐸</div>
+      <div>
+        <p class="eyebrow">TOAD SAGE / SAGECODE</p>
+        <h1>Source Contract Inspector</h1>
+        <p class="subtitle">Preview Agent A's proposed source-only contract with explicitly labeled local example records.</p>
+        <a class="explorer-back" href="./explorer.html">← Back to Project Explorer</a>
+      </div>
+    </header>
+
+    <section class="panel explorer-warning" aria-labelledby="sage-warning-title">
+      <div class="section-heading">
+        <h2 id="sage-warning-title">Fixture only — no SageCode service</h2>
+        <span class="chip">Unverified · No execution</span>
+      </div>
+      <p>These project, file, search and proposal records are <strong>local sample data</strong> matching the draft SageCode Python response shapes. They are not data from a running agent. No code is executed, no tests are run, and no production approval is possible.</p>
+      <p class="hint">A SHA-256 match here checks <strong>sample text consistency</strong>, not identity, server authenticity, external verification or safety. This page does not authenticate a host or contact a SageCode API.</p>
+    </section>
+
+    <p id="sage-notice" role="status" aria-live="polite">Loading and checking local contract fixture…</p>
+    <button id="sage-retry" class="secondary" type="button" hidden>Retry loading local example</button>
+
+    <div class="sage-layout">
+      <section class="panel" aria-labelledby="sage-project-heading">
+        <div class="section-heading">
+          <h2 id="sage-project-heading">Project & revision</h2>
+          <span id="sage-state" class="chip" data-state="blocked">Not loaded</span>
+        </div>
+        <p id="sage-project-id" class="sage-info">No project selected.</p>
+        <dl class="sage-meta">
+          <div><dt>Current revision (sample)</dt><dd id="sage-revision">Unavailable</dd></div>
+          <div><dt>Baseline revision (sample)</dt><dd id="sage-baseline">Unavailable</dd></div>
+          <div><dt>Test evidence</dt><dd id="sage-evidence">Not available</dd></div>
+          <div><dt>Approval and release</dt><dd id="sage-approval">Not authorized</dd></div>
+        </dl>
+      </section>
+
+      <section class="panel" aria-labelledby="sage-files-heading">
+        <h2 id="sage-files-heading">Source file tree</h2>
+        <p class="hint">Files are limited to the example project's declared manifest. Tap or keyboard-activate a filename to read its inert source text.</p>
+        <div class="sage-file-layout">
+          <nav aria-label="SageCode sample file navigation">
+            <ul id="sage-tree" class="sage-tree"></ul>
+          </nav>
+          <section aria-labelledby="sage-source-heading">
+            <h3 id="sage-source-heading">Read-only source</h3>
+            <p id="sage-source-name" class="explorer-path">No source selected</p>
+            <p id="sage-source-state" role="status" aria-live="polite">No source evidence loaded.</p>
+            <pre id="sage-source" tabindex="0" aria-label="Read-only SageCode sample source">No source to display.</pre>
+            <p class="hint" id="sage-source-limits">A partial read cannot establish the contents or digest of an entire source file.</p>
+          </section>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="sage-search-heading">
+        <h2 id="sage-search-heading">Search response sample</h2>
+        <p class="hint">The following hits were supplied in static fixture JSON; they are not a live search. Filename matches have line zero; content hits have one-based line numbers.</p>
+        <p id="sage-search-state" role="status" aria-live="polite">No sample search loaded.</p>
+        <ul id="sage-search-results" class="sage-search-results" aria-label="SageCode example search matches"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="sage-proposal-heading">
+        <div class="section-heading">
+          <h2 id="sage-proposal-heading">Proposed source-only edit</h2>
+          <span class="chip" id="sage-proposal-state" data-state="blocked">Unreviewed</span>
+        </div>
+        <p id="sage-proposal-summary" class="hint">No sample proposal loaded.</p>
+        <pre id="sage-diff" tabindex="0" aria-label="Inert sample unified diff">No source diff available.</pre>
+        <p id="sage-proposal-warning" class="hint">No test receipts or owner approval are present. This page has no apply, execute, restore, deploy or merge controls.</p>
+      </section>
+    </div>
+    <footer>Local fixture · SHA-256 consistency only · No API · No execution · No approval</footer>
+  </main>
+</body>
+</html>
