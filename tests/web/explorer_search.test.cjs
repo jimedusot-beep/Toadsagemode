@@ -16,9 +16,14 @@ test('SageCode-shaped fixture filename search uses line zero, never a backend re
   assert.equal(result.source, 'local-fixture-only');
   assert.equal(result.term, 'SRC');
   assert.equal(result.limited, false);
-  assert.deepEqual(result.matches, [{
+  // Searching both paths AND content must also find index.html's script src.
+  assert.equal(result.matches.length, 2);
+  assert.equal(result.matches[0].path, 'index.html');
+  assert.equal(result.matches[0].line, 4);
+  assert.equal(result.matches[0].kind, 'content');
+  assert.deepEqual(result.matches[1], {
     path:'src/app.js', line:0, snippet:'src/app.js', kind:'filename'
-  }]);
+  });
 });
 
 test('content matches preserve one-based source lines, snippets and sorted paths', () => {
