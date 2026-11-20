@@ -93,7 +93,9 @@ class ControlledAgent:
         os.replace(path, self.path)
 
     def _allowed_actions(self):
-        return ACTIONS + PROJECT_ACTIONS if self.project_adapter is not None else ACTIONS
+        # A project-bound trajectory never mixes independent candidate tests
+        # with source-only draft revisions. Legacy agents keep their tools.
+        return PROJECT_ACTIONS + ("finish",) if self.project_adapter is not None else ACTIONS
 
     def _observation(self, tool, action):
         if tool in PROJECT_ACTIONS:
