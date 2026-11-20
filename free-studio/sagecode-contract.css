@@ -22,3 +22,18 @@
 #sage-notice{font-weight:700;overflow-wrap:anywhere}
 #sage-notice.error{color:#ffd2c4}
 @media(max-width:650px){.sage-meta,.sage-file-layout{grid-template-columns:1fr}.sage-file-layout nav{max-height:260px;overflow:auto}}
+
+/* Reviewable anchors, without suggesting that backend revision switching exists. */
+.sage-section-nav{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.sage-section-nav a{display:inline-flex;align-items:center;justify-content:center;
+  min-height:48px;padding:10px 14px;border:1px solid #83b58a;border-radius:10px;
+  background:#163523;color:#ecffef;font-weight:750;overflow-wrap:anywhere}
+.sage-section-nav a:focus-visible,.sage-tree button:focus-visible,
+.sage-search-results button:focus-visible,#sage-retry:focus-visible{
+  outline:3px solid #ffd78b;outline-offset:3px
+}
+#sage-files-heading,#sage-proposal-heading,#sage-search-heading{scroll-margin-top:16px}
+.sage-navigation-note{border-left:3px solid #c5b47e;padding:7px 11px;
+  font-size:.86rem;min-height:1.5em;overflow-wrap:anywhere;background:#203529}
+.sage-navigation-note:not(:empty){color:#f5f4cf}
+@media(max-width:480px){.sage-section-nav{flex-direction:column}.sage-section-nav a{width:100%}}
