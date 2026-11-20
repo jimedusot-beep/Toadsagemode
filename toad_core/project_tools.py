@@ -264,7 +264,13 @@ class SageProjectTools:
                 "sha256": hashlib.sha256(file["content"].encode("utf-8")).hexdigest()}
 
     def search(self, term, *, limit=50):
-        if not isinstance(term, str) or not term.strip() or len(term.encode("utf-8")) > 100 or any(ord(c) < 32 for c in term):
+        if not isinstance(term, str) or not term.strip() or any(ord(c) < 32 for c in term):
+            raise PackageError("Invalid SageCode search term")
+        try:
+            term_size = len(term.encode("utf-8"))
+        except UnicodeError as exc:
+            raise PackageError("Invalid SageCode search term") from exc
+        if term_size > 100:
             raise PackageError("Invalid SageCode search term")
         if type(limit) is not int or not 1 <= limit <= 100:
             raise PackageError("Invalid SageCode search limit")
@@ -288,7 +294,13 @@ class SageProjectTools:
                 "term": term, "matches": matches, "limited": len(matches) == limit}
 
     def propose_edit(self, path, content, *, expected_revision):
-        if not isinstance(content, str) or "\x00" in content or len(content.encode("utf-8")) > MAX_FILE_BYTES:
+        if not isinstance(content, str) or "\x00" in content:
+            raise PackageError("Invalid or oversized SageCode edit")
+        try:
+            content_size = len(content.encode("utf-8"))
+        except UnicodeError as exc:
+            raise PackageError("Invalid or oversized SageCode edit") from exc
+        if content_size > MAX_FILE_BYTES:
             raise PackageError("Invalid or oversized SageCode edit")
         current = self._check_expected(expected_revision)
         before = self._file(current, path)["content"]
