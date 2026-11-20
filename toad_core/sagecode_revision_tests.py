@@ -14,9 +14,9 @@ import time
 import uuid
 
 from .lab import DockerWorker
-from .project_tools import SageProjectTools, _create_exclusive, _is_private_dir, _read_record
+from .project_tools import SageProjectTools, _create_exclusive, _is_private_dir, _read_record, _json_bytes
 from .repair import validate_repair
-from .schema import PackageError, json_bytes, package_digest
+from .schema import PackageError, package_digest
 
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
 _IMAGE_ID = re.compile(r"sha256:[0-9a-f]{64}\Z")
@@ -24,7 +24,7 @@ _SCHEMA = "sagecode-revision-test-v1"
 
 
 def _fingerprint(record):
-    return hashlib.sha256(json_bytes(record)).hexdigest()
+    return hashlib.sha256(_json_bytes(record)).hexdigest()
 
 
 class SageRevisionTestGate:
