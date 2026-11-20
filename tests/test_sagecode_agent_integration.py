@@ -107,7 +107,13 @@ class SageCodeAgentIntegrationTests(unittest.TestCase):
         return ControlledAgent(self.engine, "plain-bind", project_tools=self.project, model=ScriptedModel([]))
 
     def test_mismatched_project_baseline_blocks_session_creation(self):
-        other = self.engine.ingest_package({**source_package(), "version": "0.2.0"})
+        # The library intentionally deduplicates by execution-relevant source,
+        # so changing version metadata alone cannot create a distinct candidate.
+        changed = source_package()
+        changed["name"] = "distinct-source"
+        changed["files"][0]["content"] = "print('different source')\n"
+        other = self.engine.ingest_package(changed)
+        self.assertNotEqual(other["id"], self.candidate_id)
         with self.assertRaisesRegex(PackageError, "baseline"):
             ControlledAgent(self.engine, "mismatched", candidate_id=other["id"],
                             project_tools=self.project, model=ScriptedModel([]))
