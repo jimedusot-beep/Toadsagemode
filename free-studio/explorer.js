@@ -10,6 +10,8 @@
     const $ = selector => document.querySelector(selector);
     const ui = {
       notice: $('#explorer-notice'), retry: $('#explorer-retry'),
+      importFile: $('#explorer-import-file'), importButton: $('#explorer-import'),
+      reset: $('#explorer-reset'),
       projects: $('#explorer-project-list'), count: $('#explorer-count'),
       state: $('#explorer-project-state'), title: $('#explorer-project-title'),
       summary: $('#explorer-project-summary'), files: $('#explorer-file-list'),
@@ -195,6 +197,7 @@
       announce('Loading local sample projects…');
       try {
         catalog = await api.loadFixtures(window.fetch.bind(window));
+        decisions.clear();
         selectedId = catalog.projects[0]?.id || null;
         selectedPath = catalog.projects[0]?.files[0]?.path || null;
         render();
@@ -212,6 +215,41 @@
         loading = false;
       }
     }
+    async function importFixture() {
+      const file = ui.importFile.files?.[0];
+      if (!file) return;
+      if (file.size > 100000) {
+        announce('Fixture import refused: file exceeds 100 KB. Current projects are unchanged.', true);
+        return;
+      }
+      let next;
+      try {
+        const bytes = await file.arrayBuffer();
+        const text = new TextDecoder('utf-8', {fatal: true}).decode(bytes);
+        if (text.length > 100000) throw Error('oversized');
+        next = api.validateCatalog(JSON.parse(text));
+      } catch (_) {
+        announce('Fixture import refused: invalid UTF-8, JSON or project data. Current projects are unchanged.', true);
+        return;
+      }
+      if (!window.confirm('Replace the displayed FIXTURE projects with examples from this JSON? No real source files, tests or GitHub content will change.')) {
+        announce('Fixture import cancelled. Current projects are unchanged.');
+        return;
+      }
+      catalog = next;
+      decisions.clear();
+      selectedId = catalog.projects[0]?.id || null;
+      selectedPath = catalog.projects[0]?.files[0]?.path || null;
+      render();
+      ui.importFile.value = '';
+      ui.importButton.disabled = true;
+      announce('Loaded ' + catalog.projects.length + ' local imported fixture projects. No production project imported.');
+    }
+    ui.importFile.addEventListener('change', () => {
+      ui.importButton.disabled = !ui.importFile.files?.length;
+    });
+    ui.importButton.addEventListener('click', importFixture);
+    ui.reset.addEventListener('click', load);
     ui.retry.addEventListener('click', load);
     ui.approve.addEventListener('click', () => demoDecision('approved'));
     ui.reject.addEventListener('click', () => demoDecision('rejected'));
