@@ -83,6 +83,15 @@ GET /api/drafts/DRAFT_ID  owner header required; inert source as JSON data
 - At most 1–3 total calls per server lifetime, default **one**. The quota
   is reserved before invoking the model, without retries. No billing
   claims are made by the gateway itself.
+- The private HTTP transport permits at most **8 concurrent request
+  handlers**; excess connections close without creating more threads.
+  Header reads have an 8-second idle timeout; authenticated POST bodies
+  have an additional **8-second overall read deadline**. Timed-out
+  or incomplete bodies never reach the model or spend a call slot.
+  HTTP status 408 indicates a body deadline expiration.
+  This is resource containment for accidental slow clients and basic
+  flooding; it is **not** a substitute for rate limiting, HTTPS ingress,
+  DDoS protection, or restrictive access controls.
 - A wrong token, cross-origin POST, extra JSON fields or malformed payload
   cannot trigger model generation. Model failures return a generic error
   without raw provider errors or secrets.
@@ -101,7 +110,7 @@ must be inspected separately. Do not use this with sensitive or clinical data.
 ## How to verify
 
 - Run Python unit tests on a trusted CI runner (no model call):
-  python -m unittest tests.test_owner_gateway tests.test_web_codegen -v
+  python -m unittest tests.test_owner_gateway tests.test_owner_gateway_network_limits tests.test_web_codegen -v
 - Confirm that all standard Node/WebKit/template tests remain green.
 - A **real** first-person trial needs an actually configured host and
   model, an actual response, its private quarantine record and independently
