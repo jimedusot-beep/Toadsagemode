@@ -42,3 +42,10 @@
 #explorer-revision-summary{overflow-wrap:anywhere}
 @media(max-width:850px){.explorer-layout{grid-template-columns:1fr}.explorer-navigation{position:static}.explorer-browse-grid{grid-template-columns:minmax(160px,38%) minmax(0,1fr)}}
 @media(max-width:550px){.explorer-browse-grid,.explorer-diff-grid{grid-template-columns:1fr}.explorer-file-panel{max-height:270px;overflow:auto}.explorer-content pre{max-height:260px}.explorer-actions{flex-direction:column}.explorer-actions button{width:100%}}
+
+/* Local JSON review never grants production import capability. */
+.explorer-import-box{border-top:1px solid #567c61;margin-top:20px;padding-top:15px}
+.explorer-import-box h3{font-size:.96rem;margin:0}
+.explorer-import-box label{display:block;font-weight:750;margin:10px 0 5px}
+.explorer-import-box input[type=file]{max-width:100%;min-width:0}
+.explorer-import-box button{width:100%;margin-top:10px;padding:9px 10px}
