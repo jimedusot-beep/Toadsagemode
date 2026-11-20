@@ -269,8 +269,8 @@ function fixture() {
     await page.fill('#explorer-search-input', 'SRC');
     await page.locator('#explorer-search-input').press('Enter');
     assert.match(await page.locator('#explorer-search-status').innerText(),
-      /1 fixture matches found/);
-    assert.equal(await page.locator('#explorer-search-results button').count(),1);
+      /2 fixture matches found/);
+    assert.equal(await page.locator('#explorer-search-results button').count(),2);
     await page.getByRole('button',{
       name:'Open sample source result: src/app.js, filename'
     }).click();
