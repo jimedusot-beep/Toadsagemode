@@ -68,3 +68,12 @@
 .explorer-search-result strong{font-size:.84rem}
 .explorer-search-snippet{font:.78rem/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#c6e1cd;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
 @media(max-width:550px){.explorer-search-controls{flex-direction:column}.explorer-search-controls button{width:100%}.explorer-search-result{min-height:48px}}
+
+/* Simulation must not look like verified production evidence. */
+.explorer-shell .chip[data-state="verified"]{border-color:#d0ba78;color:#ffe7ab}
+.fixture-state-explainer{font-weight:650;border-left:3px solid #dfbd78;padding:9px 12px;background:#223529;border-radius:5px;overflow-wrap:anywhere}
+.explorer-project-button:focus-visible,.explorer-file-button:focus-visible,
+.explorer-search-result:focus-visible,.explorer-import-box button:focus-visible,
+.explorer-search-controls button:focus-visible,.explorer-search-controls input:focus-visible{
+  outline:3px solid #ffd78b;outline-offset:3px
+}
