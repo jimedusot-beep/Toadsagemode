@@ -249,7 +249,7 @@
         untested: 'Example only. No independent test receipt exists.',
         testing: 'Simulated testing label only. No test worker is running.',
         failed: 'Simulated failed test output only. No real test ran here.',
-        verified: 'SIMULATED verified label only. No trustworthy test receipt exists.',
+        verified: 'SIMULATED verified label only. NO independent verification evidence exists.',
         blocked: 'Example is blocked. This page cannot run or release source.'
       };
       ui.stateDetail.textContent = project ? descriptions[project.state] :
