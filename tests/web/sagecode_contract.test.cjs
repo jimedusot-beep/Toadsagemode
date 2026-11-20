@@ -139,3 +139,64 @@ test('empty SageCode project stays unverified and contains no invented source',a
   assert.equal(checked.results.length,0);
   assert.equal(checked.view.status.test_evidence,null);
 });
+
+
+test('a final paginated source window is partial even when truncated=false',async()=>{
+  const item=copy();
+  const source=item.sources[1];
+  source.start_line=5;
+  source.total_lines=10;
+  source.content='last line\n';
+  source.truncated=false; // Agent A: no later page, but earlier pages omitted
+  const value=api.validateFixture(item);
+  const checked=await api.validateHashes(value,webcrypto.subtle);
+  assert.equal(checked.results[1].check,'partial_view_not_hash_verified');
+  assert.equal(value.sources[1].start_line,5);
+  assert.equal(value.sources[1].truncated,false);
+});
+
+test('a changed proposal must contain an inspectable diff, even when truncated',()=>{
+  for (const diff of ['', '   ', '\n']) {
+    const item=copy();
+    item.proposal.diff=diff;
+    assert.throws(()=>api.validateFixture(item),/changed proposal without a readable diff/);
+    item.proposal.truncated=true;
+    assert.throws(()=>api.validateFixture(item),/changed proposal without a readable diff/);
+  }
+});
+
+test('partial source windows cannot claim bytes outside manifest or lines beyond total',()=>{
+  for (const change of [
+    source=>{source.start_line=999;},
+    source=>{source.content='x'.repeat(200);},
+    source=>{source.start_line=3;source.total_lines=3;source.content='a\nb\n';}
+  ]) {
+    const item=copy();
+    const source=item.sources[1];
+    source.start_line=2;source.total_lines=10;source.truncated=false;
+    source.content='x\n';
+    change(source);
+    assert.throws(()=>api.validateFixture(item),/SageCode sample rejected/);
+  }
+});
+
+test('empty project and empty source are accepted without claiming verification',async()=>{
+  const value=copy();
+  value.tree.entries=[];
+  value.sources=[];
+  value.search.matches=[];
+  value.proposal=null;
+  const checked=await api.validateHashes(api.validateFixture(value),webcrypto.subtle);
+  assert.equal(checked.results.length,0);
+  assert.equal(checked.view.status.approved,false);
+  assert.equal(checked.view.status.verification,'unverified');
+});
+
+test('repeated read-only fixture inspections cannot create executed or approved state',async()=>{
+  for(let i=0;i<5;i++){
+    const checked=await api.validateHashes(api.validateFixture(copy()),webcrypto.subtle);
+    assert.equal(checked.view.status.executed,false);
+    assert.equal(checked.view.status.approved,false);
+    assert.equal(checked.view.status.test_evidence,null);
+  }
+});
