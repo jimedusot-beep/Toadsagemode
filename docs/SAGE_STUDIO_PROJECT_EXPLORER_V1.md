@@ -30,7 +30,7 @@ From a trusted checkout of this branch:
     python -m unittest tests.test_free_studio_bundles -v
     python tools/build_free_studio_bundles.py --output /tmp/toad-explorer-build
 
-The automated WebKit test covers iPhone 13 and 834 px tablet viewports, keyboard file navigation, focus styles, responsive overflow, source safety, approval confirmation/cancellation, rejection, empty project, testing/failed/verified sample labels, failed fixture load, invalid JSON/data and local fixture imports, unavailable storage, long filenames and large malicious-looking source. **Automated WebKit is not physical Safari/iPad testing.** The owner must still test real iPad Safari and VoiceOver, large text, touch targets and browser dialogs.
+The automated WebKit test covers iPhone 13 and 834 px tablet viewports, keyboard file navigation, focus styles, responsive overflow, source safety, approval confirmation/cancellation, rejection, empty project, testing/failed/verified sample labels, failed fixture load, invalid JSON/data and local fixture imports, unavailable storage, long filenames, independent diff hunks and complete large-file fallback, and large malicious-looking source. **Automated WebKit is not physical Safari/iPad testing.** The owner must still test real iPad Safari and VoiceOver, large text, touch targets and browser dialogs.
 
 The existing bundle builder packages the five new Explorer assets together with the unchanged Free Studio templates and six reviewed iframe previews; the original ZIP verification and digest checks remain.
 
@@ -38,7 +38,9 @@ The existing bundle builder packages the five new Explorer assets together with 
 
 - No real project persistence, provider connection, terminal or live code generation.
 - Demo approvals are neither production approvals nor release authorizations.
-- The before/after diff is a simple prefix/suffix changed-block comparison, not a complete Git multi-hunk algorithm.
+- Explorer V1.1 identifies multiple independent changed blocks using a bounded line-level longest-common-subsequence comparison. Unchanged lines between edits remain unchanged in the display. It reports exact additions/removals and change-group totals **only when exact matching completed**. The algorithm does not claim word-level or full Git diff parity.
+- If the changed middle region exceeds 160,000 comparison cells, the adapter switches to a clearly labeled **coarse** changed-block comparison (no false exact-count claim). For more than 600 displayed diff rows, the UI shows **complete original and proposed source as plain text** instead of rendering thousands of highlighted spans; it never silently truncates code.
+- The source diff and all evidence still come only from fixture data and cannot authorize a real revision.
 - Explorer works when localStorage is denied because it never reads or writes it. This does not change the separate saved-settings feature.
 - Invalid or missing fixture data clears the view and enables Retry, without using previously displayed data.
 - Never use this page to execute AI-authored code. The existing reviewed-template sandbox boundary belongs to the separate interactive preview page.

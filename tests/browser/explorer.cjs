@@ -211,6 +211,55 @@ function fixture() {
     await page.waitForFunction(()=>document.querySelector('#explorer-project-list').querySelectorAll('button').length===5);
     assert.equal(await page.evaluate(()=>localStorage.length),0);
 
+    // Two separate source changes must preserve an unchanged middle line.
+    const twoHunks = fixture();
+    const originalSource = 'start\nold first\nmiddle untouched\nold second\nend';
+    const nextSource = 'start\nnew first\nmiddle untouched\nnew second\nend';
+    const updatedFile = twoHunks.projects[0].files.find(x=>x.path==='src/app.js');
+    updatedFile.content = originalSource;
+    twoHunks.projects[0].revision.before = originalSource;
+    twoHunks.projects[0].revision.after = nextSource;
+    const multi = await browser.newContext({...devices['iPhone 13']});
+    const multiple = await multi.newPage();
+    await multiple.route('**/explorer-fixtures.json', route=>
+      route.fulfill({contentType:'application/json',body:JSON.stringify(twoHunks)}));
+    await ready(multiple,url);
+    assert.match(await multiple.locator('#explorer-diff-status').innerText(),
+      /Exact line comparison: 2 added, 2 removed, 2 change groups/);
+    assert.match(await multiple.locator('#explorer-before .diff-same').allTextContents()
+      .then(lines=>lines.join('\n')),/middle untouched/);
+    assert.equal(await multiple.locator('#explorer-before .diff-removed')
+      .filter({hasText:'middle untouched'}).count(),0);
+    assert.equal(await multiple.locator('#explorer-after .diff-added')
+      .filter({hasText:'middle untouched'}).count(),0);
+    assert.match(await multiple.locator('#explorer-before .diff-removed').first().innerText(),
+      /\d+\s+− old first/);
+    await multi.close();
+
+    // Large changes keep ALL source readable while explicitly disabling
+    // granular highlighting, avoiding thousands of DOM spans on mobile.
+    const large = fixture();
+    const hugeBefore = Array.from({length:700},(_,i)=>'old'+i).join('\n');
+    const hugeAfter = Array.from({length:700},(_,i)=>'new'+i).join('\n');
+    large.projects[0].files.find(x=>x.path==='src/app.js').content = hugeBefore;
+    large.projects[0].revision.before = hugeBefore;
+    large.projects[0].revision.after = hugeAfter;
+    const giant = await browser.newContext({...devices['iPhone 13']});
+    const oversized = await giant.newPage();
+    await oversized.route('**/explorer-fixtures.json', route=>
+      route.fulfill({contentType:'application/json',body:JSON.stringify(large)}));
+    await ready(oversized,url);
+    assert.match(await oversized.locator('#explorer-diff-status').innerText(),
+      /Large comparison: showing the COMPLETE original and proposed source as plain text/);
+    assert.match(await oversized.locator('#explorer-diff-status').innerText(),
+      /change counts are approximate/);
+    assert.match(await oversized.locator('#explorer-before').innerText(),/old699/);
+    assert.match(await oversized.locator('#explorer-after').innerText(),/new699/);
+    assert.equal(await oversized.locator('#explorer-after .diff-line').count(),0);
+    assert.equal(await oversized.evaluate(()=>
+      document.documentElement.scrollWidth <= window.innerWidth + 1),true);
+    await giant.close();
+
     assert.deepEqual(errors, [],'No WebKit page errors');
     assert.deepEqual(offsite, [],'No requests off the local Studio origin');
     await phone.close();

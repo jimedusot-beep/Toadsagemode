@@ -18,6 +18,7 @@
       empty: $('#explorer-empty'), path: $('#explorer-selected-path'),
       source: $('#explorer-source'), revisionState: $('#explorer-revision-state'),
       revisionSummary: $('#explorer-revision-summary'),
+      diffStatus: $('#explorer-diff-status'),
       before: $('#explorer-before'), after: $('#explorer-after'),
       approve: $('#explorer-approve'), reject: $('#explorer-reject'),
       decision: $('#explorer-decision'), testState: $('#explorer-test-state'),
@@ -118,14 +119,17 @@
       ui.path.textContent = file ? file.path : 'No file selected';
       ui.source.textContent = file ? file.content : 'No source files are available for this example.';
     }
+    const MAX_HIGHLIGHT_LINES = 600;
     function diffText(el, changes, side) {
       clear(el);
+      let number = 0;
       changes.forEach(part => {
         if (side === 'before' && part.kind === 'added') return;
         if (side === 'after' && part.kind === 'removed') return;
+        number++;
         const symbol = part.kind === 'added' ? '+' : (part.kind === 'removed' ? '−' : ' ');
-        const line = node('span', 'diff-line diff-' + part.kind, symbol + ' ' + part.text);
-        el.append(line);
+        const label = String(number).padStart(4, ' ') + ' ' + symbol + ' ' + part.text;
+        el.append(node('span', 'diff-line diff-' + part.kind, label));
       });
     }
     function renderRevision(project) {
@@ -133,15 +137,31 @@
       badge(ui.revisionState, proposal?.status || 'blocked');
       if (!proposal) {
         ui.revisionSummary.textContent = 'No proposed revision exists for this fixture project.';
+        ui.diffStatus.textContent = 'No source comparison available.';
         ui.before.textContent = 'No revision';
         ui.after.textContent = 'No revision';
       } else {
-        ui.revisionSummary.textContent =
-          'Example revision ' + proposal.id + ' · ' + proposal.path +
-          ' · before/after is a text comparison only.';
-        const changes = api.diffLines(proposal.before, proposal.after);
-        diffText(ui.before, changes, 'before');
-        diffText(ui.after, changes, 'after');
+        const comparison = api.compareSource(proposal.before, proposal.after);
+        const lines = comparison.lines;
+        ui.revisionSummary.textContent = 'Example revision ' + proposal.id +
+          ' · ' + proposal.path + ' · sample source comparison only.';
+        if (lines.length > MAX_HIGHLIGHT_LINES) {
+          // All source remains visible. Avoid thousands of mobile DOM spans.
+          ui.before.textContent = proposal.before;
+          ui.after.textContent = proposal.after;
+          ui.diffStatus.textContent = 'Large comparison: showing the COMPLETE original and proposed source as plain text. Highlighting and line numbers are disabled to keep the page responsive. ' +
+            (comparison.mode === 'coarse' ? 'Line-level diff was too large; change counts are approximate.' :
+              'Exact line-change totals: ' + comparison.added + ' added, ' + comparison.removed + ' removed.');
+        } else {
+          diffText(ui.before, lines, 'before');
+          diffText(ui.after, lines, 'after');
+          ui.diffStatus.textContent = comparison.mode === 'exact'
+            ? 'Exact line comparison: ' + comparison.added + ' added, ' +
+              comparison.removed + ' removed, ' + comparison.hunks +
+              ' change groups. This is sample text, not a test result.'
+            : 'Coarse comparison (large change region): highlighted lines and change totals are APPROXIMATE. ' +
+              'Some unchanged middle lines may appear changed. Read both full source panes before deciding.';
+        }
       }
       const decision = project && decisions.get(project.id);
       ui.approve.disabled = !proposal || !!decision;
