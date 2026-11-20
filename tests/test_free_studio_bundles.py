@@ -52,11 +52,15 @@ class FreeStudioBundlesTests(unittest.TestCase):
                 self.assertIn("Toad Sage Flashcards",archive.read("index.html").decode())
             with zipfile.ZipFile(out / STUDIO_NAME) as archive:
                 self.assertEqual(set(archive.namelist()),
-                                 {"index.html","styles.css","app.js","templates.json","v2.css","v2.js","v3.css","v3.js"} |
+                                 {"index.html","styles.css","app.js","templates.json","v2.css","v2.js","v3.css","v3.js",
+                                  "explorer.html","explorer.css","explorer.js","explorer-adapter.js","explorer-fixtures.json"} |
                                  {"previews/"+kind+"-"+theme+"/index.html"
                                   for kind in ("tasks","notes","flashcards")
                                   for theme in ("forest","midnight")})
                 self.assertIn("Free App Studio",archive.read("index.html").decode())
+                self.assertIn("Open Project Explorer demo",archive.read("index.html").decode())
+                self.assertIn("Local fixture demonstration",archive.read("explorer.html").decode())
+                self.assertIn("fixture-only",archive.read("explorer.js").decode().lower())
                 self.assertEqual(json.loads(archive.read("templates.json")),expected_catalog())
             self.assertEqual(
                 {p.name for p in (out/"flashcards-site").iterdir()},
@@ -64,7 +68,8 @@ class FreeStudioBundlesTests(unittest.TestCase):
             )
             self.assertEqual(
                 {p.name for p in (out/"browser-studio").iterdir()},
-                {"index.html","styles.css","app.js","templates.json","v2.css","v2.js","v3.css","v3.js","previews"}
+                {"index.html","styles.css","app.js","templates.json","v2.css","v2.js","v3.css","v3.js",
+                 "explorer.html","explorer.css","explorer.js","explorer-adapter.js","explorer-fixtures.json","previews"}
             )
             self.assertEqual(
                 len(list((out/"browser-studio"/"previews").glob("*/index.html"))), 6
