@@ -9,7 +9,8 @@
 - The records are immutable revisions addressed by their SHA-256 digest, with an atomic HEAD pointer and an immutable original baseline. Edited code is a **proposal**, not a verified installed ability. Source hashes detect accidental/casual tampering, but **are not a cryptographic authentication scheme against same-user host compromise**.
 - The current V1 component has **no network service, subprocess tool, shell, model invocation, approval transition, live preview, deployment, Git commit or automatic push**. These require separately reviewed modules. No privilege or hardware control is granted.
 - Operations use the existing 40-file, 250-kB-per-file, 512-kB-package constraints; accepted source names are portable and protected core paths are forbidden. Secret-suggesting paths are rejected conservatively, but this is not a comprehensive credential scanner. Never import secrets into source candidates.
-- **Single-writer V1:** callers must serialize edits per project. A supplied `expected_revision` prevents stale sequential updates but is not a cross-process transaction/lock. No public editing endpoint is authorized.
+- **Local writer exclusion (audit hardening):** source edits and restores now claim an exclusive, owner-private `.sagecode-write.lock` before checking `expected_revision` and modifying HEAD. Concurrent writers fail closed instead of both accepting the same stale revision. A crash may leave the lock; the trusted operator must inspect project state before removing it manually. This is **not** a distributed transaction or a guarantee for network/shared filesystems; no public editing endpoint is authorized.
+- A source diff is prepared **before** the revision pointer moves. Diff preparation or failed immutable-record writes leave the prior HEAD in place; a failed HEAD replacement also removes any newly created orphan revision when cleanup is possible. The storage directory must still be protected and backed up by its trusted owner.
 
 ## Trusted Python entry points
 
@@ -117,7 +118,7 @@ Folder entries are **virtual**, derived from declared manifest paths. Sage does 
 }
 ```
 
-The caller supplies `expected_revision`; stale requests fail closed and do not move HEAD. A diff may be truncated at 30 kB and must be labeled as partial. The project is unverified after any edit, regardless of model assurances.
+The caller supplies `expected_revision`; stale requests fail closed and do not move HEAD. Concurrent writers are also excluded by the private lock, with no automatic stale-lock removal. A diff may be truncated at 30 kB and must be labeled as partial. To avoid unbounded line-comparison costs, a very large comparison may instead return **`diff: ""`, `truncated: true`, `unchanged: false`**; this means **the diff was omitted, not that there are no changes**. In that case, require complete before/after source inspection before review. The project is unverified after any edit, regardless of model assurances.
 
 ### 6. Restore result
 
@@ -155,7 +156,7 @@ Other UI states: `loading`, `ready_unverified`, `pending_review`, `failed`, `blo
 
 Agent B can implement a read-only, mobile-friendly file tree, source viewer, bounded search UI and proposal diff panel against **explicitly labeled local fixtures** matching these response shapes. Do not invent an HTTP endpoint or pass authorization from browser to the trusted controller. Do not preview or execute arbitrary candidate source inside the main Studio page.
 
-The backend's own tests cover multi-file listing/search, bounded reads, revision snapshots, restore/reopen, stale-write rejection, path traversal, denied source paths, symlinks, tampered revisions and honest unverified status. Full repository CI must pass independently; a unit-test pass is not a proof of OS-level containment, production authorization or browser functionality.
+The backend's own tests cover multi-file listing/search, bounded reads, revision snapshots, restore/reopen, stale-write rejection, concurrent writer exclusion, failed diff/write recovery, bounded diff fallback, path traversal, denied source paths, symlinks, tampered revisions and honest unverified status. Full repository CI must pass independently; a unit-test pass is not a proof of OS-level containment, production authorization or browser functionality.
 
 ## Engineering basis and provenance
 
