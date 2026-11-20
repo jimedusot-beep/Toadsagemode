@@ -1,0 +1,125 @@
+{
+  "schema": "toad-sage-explorer-fixture-v1",
+  "projects": [
+    {
+      "id": "study-planner",
+      "title": "Study Planner · example",
+      "summary": "An offline planning interface with a three-file source tree. Revision is an untested mock proposal.",
+      "state": "draft",
+      "files": [
+        {
+          "path": "index.html",
+          "content": "<!doctype html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\"><title>Study Planner</title><link rel=\"stylesheet\" href=\"styles.css\"></head>\n<body><main><h1>Today's Study</h1><p id=\"tip\">Stay focused.</p><script src=\"src/app.js\" defer></script></main></body>\n</html>\n"
+        },
+        {
+          "path": "styles.css",
+          "content": "body { font-family: system-ui; padding: 1rem; }\nmain { max-width: 46rem; margin: auto; }\n"
+        },
+        {
+          "path": "src/app.js",
+          "content": "const tip = document.getElementById('tip');\ntip.textContent = 'Start with one task.';\n"
+        },
+        {
+          "path": "README.md",
+          "content": "# Study Planner\nLocal demo source files. No AI model generated this project.\n"
+        }
+      ],
+      "revision": {
+        "id": "show-next-step",
+        "path": "src/app.js",
+        "before": "const tip = document.getElementById('tip');\ntip.textContent = 'Start with one task.';\n",
+        "after": "const tip = document.getElementById('tip');\ntip.textContent = 'Start with your most important task.';\n",
+        "status": "untested",
+        "test": {
+          "status": "blocked",
+          "output": "BLOCKED (fixture): No independent execution receipt exists. Proposed source was not run."
+        }
+      },
+      "test": {
+        "status": "untested",
+        "output": "Fixture only: original source has not been executed or independently tested."
+      }
+    },
+    {
+      "id": "notes-error",
+      "title": "Notes Debugging · example",
+      "summary": "A deliberately failed test-result fixture. It must never show as verified.",
+      "state": "failed",
+      "files": [
+        {
+          "path": "index.html",
+          "content": "<!doctype html>\n<title>Notes</title>\n<button id=\"save\">Save note</button>\n<script src=\"app.js\" defer></script>\n"
+        },
+        {
+          "path": "app.js",
+          "content": "document.getElementById('save').textContent = 'Save note';\n"
+        }
+      ],
+      "revision": {
+        "id": "broken-save-demo",
+        "path": "app.js",
+        "before": "document.getElementById('save').textContent = 'Save note';\n",
+        "after": "document.getElementById('missing-save').textContent = 'Saved';\n",
+        "status": "failed",
+        "test": {
+          "status": "failed",
+          "output": "FAIL (fixture): TypeError: document.getElementById(...) is null\nExpected selector #save, revision references #missing-save.\nThis output was authored as an example and is NOT a real test result."
+        }
+      },
+      "test": {
+        "status": "failed",
+        "output": "FAIL (fixture): Example test failure, not an executed browser test."
+      }
+    },
+    {
+      "id": "verified-sample",
+      "title": "Flashcards · status example",
+      "summary": "Demonstrates a 'verified' label without implying a real sandbox or model run.",
+      "state": "verified",
+      "files": [
+        {
+          "path": "index.html",
+          "content": "<!doctype html><title>Fixture Flashcards</title><main><h1>Example card</h1></main>\n"
+        },
+        {
+          "path": "app.js",
+          "content": "// Example source for UI inspection only.\n"
+        }
+      ],
+      "revision": null,
+      "test": {
+        "status": "verified",
+        "output": "VERIFIED SAMPLE (fixture data only). No model was contacted. No browser test or Docker receipt was produced by Explorer."
+      }
+    },
+    {
+      "id": "testing-sample",
+      "title": "Testing · status example",
+      "summary": "Demonstrates a pending run without reporting a pass.",
+      "state": "testing",
+      "files": [
+        {
+          "path": "src/source.js",
+          "content": "export const answer = 42;\n"
+        }
+      ],
+      "revision": null,
+      "test": {
+        "status": "testing",
+        "output": "TESTING SAMPLE (fixture data only). There is no running worker or job associated with this label."
+      }
+    },
+    {
+      "id": "empty-project",
+      "title": "Empty Project · example",
+      "summary": "Demonstrates an uninitialized project with no source or revision.",
+      "state": "untested",
+      "files": [],
+      "revision": null,
+      "test": {
+        "status": "blocked",
+        "output": "BLOCKED (fixture): Create or import files in a future reviewed workflow. No import is available here."
+      }
+    }
+  ]
+}
