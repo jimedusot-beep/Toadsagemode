@@ -83,6 +83,7 @@
             <span id="explorer-revision-state" class="chip" data-state="blocked">Fixture: none</span>
           </div>
           <p id="explorer-revision-summary" class="hint">No proposal loaded.</p>
+          <p id="explorer-diff-status" class="hint" role="status" aria-live="polite">No source comparison available.</p>
           <div class="explorer-diff-grid">
             <section aria-labelledby="explorer-before-heading">
               <h3 id="explorer-before-heading">Before</h3>
@@ -93,7 +94,7 @@
               <pre id="explorer-after" tabindex="0" aria-label="Proposed source after change">No proposed revision</pre>
             </section>
           </div>
-          <p class="hint">Colored line backgrounds and +/− marks identify differing text. This display does not execute, apply or validate changes.</p>
+          <p class="hint">Line numbers and +/− marks identify source changes where an exact comparison is available. Oversized comparisons show full plain source instead of truncating it. All comparisons are read-only fixture data and do not execute or validate code.</p>
           <div class="explorer-actions">
             <button id="explorer-approve" type="button" class="primary" disabled>Approve demo revision</button>
             <button id="explorer-reject" type="button" class="secondary" disabled>Reject demo revision</button>
