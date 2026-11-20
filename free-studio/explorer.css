@@ -49,3 +49,6 @@
 .explorer-import-box label{display:block;font-weight:750;margin:10px 0 5px}
 .explorer-import-box input[type=file]{max-width:100%;min-width:0}
 .explorer-import-box button{width:100%;margin-top:10px;padding:9px 10px}
+
+/* Keep precision/fallback warnings distinguishable from code or test status. */
+#explorer-diff-status{border-left:3px solid #b6dfb8;padding:8px 12px;background:#20372a;border-radius:4px;overflow-wrap:anywhere}
