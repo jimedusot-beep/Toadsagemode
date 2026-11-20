@@ -108,11 +108,16 @@
       isBool(source.truncated,'source truncation');
       str(source.content,16000,'source',true);
       if (utf8(source.content) > 16000) fail('source read exceeds 16 kB');
-      if (!source.truncated) {
-        if (source.start_line !== 1 || utf8(source.content) !== entry.bytes ||
+      // Agent A's truncated=false means "no more lines AFTER this read".
+      // A later-page read may still omit the entire beginning of the file.
+      const partial = source.truncated || source.start_line > 1;
+      if (!partial) {
+        if (utf8(source.content) !== entry.bytes ||
             countLines(source.content) !== source.total_lines) fail('full source metadata mismatch');
-      } else if (source.start_line > Math.max(1,source.total_lines)) {
-        fail('partial source start beyond total lines');
+      } else if (source.start_line > Math.max(1,source.total_lines) ||
+                 utf8(source.content) > entry.bytes ||
+                 countLines(source.content) > Math.max(0,source.total_lines-source.start_line+1)) {
+        fail('partial source read exceeds declared file');
       }
       sources.set(name,source);
     }
@@ -147,6 +152,7 @@
       isBool(proposal.truncated,'proposal truncation');
       if (proposal.unchanged) fail('fixture proposal must represent a change');
       str(proposal.diff,30000,'proposal diff',true);
+      if (!proposal.diff.trim()) fail('changed proposal without a readable diff');
       if (utf8(proposal.diff)>30000) fail('proposal diff bytes');
       rejectAuthority(proposal,'proposal');
     }
@@ -156,7 +162,7 @@
     if (!subtle || typeof subtle.digest !== 'function') fail('SHA-256 unavailable; source cannot be checked');
     const results = [];
     for (const source of view.sources) {
-      if (source.truncated) {
+      if (source.truncated || source.start_line > 1) {
         results.push({path:source.path,check:'partial_view_not_hash_verified'});
         continue;
       }
