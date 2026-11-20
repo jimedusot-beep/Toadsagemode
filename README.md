@@ -2,7 +2,7 @@
 
 A local-first absorption inbox and Python development engine. Save ideas or source, inspect them without execution, and organize reusable candidates. Optional Ollama and a separately restricted Docker worker provide bounded Python project missions. The protected core is never rewritten by imported abilities.
 
-[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [First working app (App Studio)](docs/APP_STUDIO.md) · [AI app blueprint workflow](docs/AI_APP_BLUEPRINTS.md) · [Quarantined AI-written web app drafts](docs/WEB_CODE_QUARANTINE.md) · [Isolated WebKit acceptance lab](docs/WEBKIT_LAB.md) · [Frozen independent app checks](docs/FROZEN_WEB_ACCEPTANCE.md) · [Opt-in server-side Cloud AI](docs/CLOUD_AI_PROVIDER.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
+[Open the iPhone dashboard](https://jimedusot-beep.github.io/Toadsagemode/) · [Audit](docs/audit/2026-10-20-baseline.md) · [Development ledger](docs/TOAD_SAGE_PROGRESS.md) · [First working app (App Studio)](docs/APP_STUDIO.md) · [Zero-cost App Studio: tasks, notes, flashcards](docs/FREE_APP_STUDIO.md) · [AI app blueprint workflow](docs/AI_APP_BLUEPRINTS.md) · [Quarantined AI-written web app drafts](docs/WEB_CODE_QUARANTINE.md) · [Isolated WebKit acceptance lab](docs/WEBKIT_LAB.md) · [Frozen independent app checks](docs/FROZEN_WEB_ACCEPTANCE.md) · [Opt-in server-side Cloud AI](docs/CLOUD_AI_PROVIDER.md) · [Open-source adaptation register](docs/OPEN_SOURCE_ADAPTATIONS.md) · [Lab security and setup](docs/LAB.md) · [Models and missions](docs/MISSIONS.md)
 
 ## Next demonstration: empathy and personality learning
 
@@ -106,6 +106,24 @@ the default. The static iPhone Netlify task app does **not** have an AI
 backend yet, and no API key belongs in browser code.
 
 See [Cloud AI provider setup and safety gates](docs/CLOUD_AI_PROVIDER.md).
+
+## No-cost functional app generation (no external AI calls)
+
+Run `app free-build` from a trusted Python environment to create
+a complete standalone mobile task app, notes app or **flashcard study app**.
+A small deterministic interpreter accepts a plain-English description,
+chooses exactly one implemented template, and refuses unsupported scope:
+
+```sh
+python -m toad_core app free-build "Make an offline flashcard app for studying" \
+  --name study-cards --title "Study Cards"
+python -m toad_core app inspect study-cards
+```
+
+It builds a **real source ZIP** with independent per-app local storage,
+but does **not** call an LLM, execute untrusted model-generated code,
+or deploy the app. CI runs mobile WebKit on the reviewed templates.
+[Full instructions and honest limits](docs/FREE_APP_STUDIO.md).
 
 ## Feed Toad on iPhone
 

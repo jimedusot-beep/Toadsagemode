@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="color-scheme" content="dark">
+  <title>{{TITLE}}</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body data-theme="{{THEME}}">
+  <a class="skip" href="#study">Skip to studying</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="logo" aria-hidden="true">🐸</div>
+      <div>
+        <p class="eyebrow">TOAD SAGE / APP STUDIO</p>
+        <h1>{{TITLE}}</h1>
+        <p class="subtitle">Study one card at a time. Keep what you learn.</p>
+      </div>
+    </header>
+    <main>
+      <section class="panel" aria-labelledby="create-title">
+        <h2 id="create-title">Create a flashcard</h2>
+        <form id="card-form">
+          <label for="front-input">Front — question or term</label>
+          <input id="front-input" type="text" maxlength="160" required autocomplete="off" placeholder="e.g. What is a variable?">
+          <label for="back-input">Back — answer</label>
+          <textarea id="back-input" maxlength="1200" rows="3" required placeholder="e.g. A symbol that represents an unknown value."></textarea>
+          <div class="form-row action-row">
+            <button class="primary" id="save-card" type="submit">Add flashcard</button>
+            <button id="cancel-edit" type="button" hidden>Cancel edit</button>
+          </div>
+        </form>
+        <p id="message" role="status" aria-live="polite">Cards stay only in this browser when storage is available.</p>
+      </section>
+      <section class="panel" id="study" aria-labelledby="study-heading">
+        <div class="section-header">
+          <h2 id="study-heading">Study deck</h2>
+          <span id="progress" class="count">0 of 0 learned</span>
+        </div>
+        <div id="empty-study" class="empty">Add a flashcard to start studying.</div>
+        <div id="study-controls" hidden>
+          <p class="study-position" id="position" aria-live="polite">Card 1 of 1</p>
+          <button class="flashcard" id="flip-card" type="button" aria-label="Flip card to see its answer">
+            <span id="face-label" class="face-label">QUESTION</span>
+            <span id="face-text" class="face-text"></span>
+            <span class="flip-hint">Tap to flip</span>
+          </button>
+          <div class="form-row nav-row">
+            <button id="previous-card" type="button">Previous</button>
+            <button id="next-card" type="button">Next</button>
+          </div>
+          <button id="learned-card" type="button" aria-pressed="false">Mark learned</button>
+        </div>
+      </section>
+      <section class="panel" aria-labelledby="manage-heading">
+        <div class="section-header">
+          <h2 id="manage-heading">Your flashcards</h2>
+          <span id="card-count" class="count">0 cards</span>
+        </div>
+        <label for="search-cards">Find a flashcard</label>
+        <input id="search-cards" type="search" placeholder="Search questions and answers" autocomplete="off">
+        <ul id="card-list" aria-label="Saved flashcards"></ul>
+        <p id="empty-cards" class="empty">No flashcards yet.</p>
+      </section>
+    </main>
+    <footer>Offline-first · No login · No tracking · Reviewed Toad Sage template</footer>
+  </div>
+</body>
+</html>

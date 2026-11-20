@@ -21,7 +21,7 @@ from .schema import PackageError, strict_json
 
 NAME = re.compile(r"[a-z][a-z0-9-]{1,39}\Z")
 THEMES = ("forest", "midnight")
-APP_KINDS = ("tasks", "notes")
+APP_KINDS = ("tasks", "notes", "flashcards")
 SOURCE_FILES = ("index.html", "styles.css", "app.js", "README.md")
 REPORT = "build_report.json"
 TEMPLATES = "toad_core.studio_templates"
@@ -65,22 +65,23 @@ class AppStudio:
     @staticmethod
     def _templates(name, title, theme, kind):
         template = files(TEMPLATES)
-        is_notes = kind == "notes"
-        page = "notes.html" if is_notes else "tasks.html"
-        script = "notes.js" if is_notes else "app.js"
+        page = {"tasks": "tasks.html", "notes": "notes.html", "flashcards": "flashcards.html"}[kind]
+        script = {"tasks": "app.js", "notes": "notes.js", "flashcards": "flashcards.js"}[kind]
         base_js = template.joinpath(script).read_text(encoding="utf-8")
         # The slug comes from a strict allowlist, not from untrusted JS.
         storage_key = "toad-sage-" + kind + "-v1:" + name
-        if is_notes:
-            base_js = base_js.replace("{{STORAGE_KEY}}", storage_key)
-        else:
+        if kind == "tasks":
             original = "const KEY = 'toad-sage-task-list-v1';"
             if original not in base_js:
                 raise PackageError("Trusted task storage-key anchor is missing")
             base_js = base_js.replace(original, "const KEY = '" + storage_key + "';")
+        else:
+            if "{{STORAGE_KEY}}" not in base_js:
+                raise PackageError("Trusted app storage-key anchor is missing")
+            base_js = base_js.replace("{{STORAGE_KEY}}", storage_key)
         css = template.joinpath("styles.css").read_text(encoding="utf-8")
-        if is_notes:
-            css += template.joinpath("notes.css").read_text(encoding="utf-8")
+        if kind != "tasks":
+            css += template.joinpath(kind + ".css").read_text(encoding="utf-8")
         return {
             "index.html": template.joinpath(page).read_text(encoding="utf-8")
                 .replace("{{TITLE}}", html.escape(title, quote=True))
@@ -91,8 +92,10 @@ class AppStudio:
                 "# Offline " + kind + " application\n\n"
                 "Built from a reviewed, versioned Toad Sage " + kind + " template.\n"
                 "A browser stores this app's data locally under a distinct key.\n"
-                "The notes app supports create/edit/search/delete; the tasks app supports "
-                "create/toggle/filter/delete/clear completed.\n"
+                "Supported features by template:\n"
+                "- tasks: create/toggle/filter/delete/clear completed.\n"
+                "- notes: create/edit/search/delete.\n"
+                "- flashcards: create/edit/delete/search, flip, study navigation and learned progress.\n"
                 "Use a trusted local static server or Netlify preview for browser storage.\n"
                 "Browser storage is not an encrypted backup or cross-device sync.\n"
                 "Do not put secrets or client medical data into this demo.\n"
@@ -108,7 +111,7 @@ class AppStudio:
         if theme not in THEMES:
             raise PackageError("Theme must be forest or midnight")
         if kind not in APP_KINDS:
-            raise PackageError("Supported app kinds are tasks or notes")
+            raise PackageError("Supported app kinds are tasks, notes or flashcards")
         parent = self._root(create=True)
         destination = parent / name
         if destination.exists() or destination.is_symlink():

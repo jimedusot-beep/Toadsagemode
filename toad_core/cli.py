@@ -42,11 +42,16 @@ def parser():
     evidence.add_argument('--note',required=True);evidence.add_argument('--report-sha256')
     app=commands.add_parser('app',help='Review AI app blueprints or create safe template-based offline apps')
     app_sub=app.add_subparsers(dest='action',required=True)
-    new_app=app_sub.add_parser('create',help='Create a trusted task or notes app without an AI model')
+    free_app=app_sub.add_parser('free-build',help='Build an explicitly supported app from a simple brief; no model, no API calls')
+    free_app.add_argument('brief',help='One clear app type: tasks, notes or flashcards')
+    free_app.add_argument('--name',required=True,help='Lowercase unique output name')
+    free_app.add_argument('--title',help='Optional visible app title')
+    free_app.add_argument('--theme',choices=['forest','midnight'],default='forest')
+    new_app=app_sub.add_parser('create',help='Create a reviewed tasks, notes or flashcards app without a model')
     new_app.add_argument('name',help='Lowercase app slug')
     new_app.add_argument('--title',help='Visible application title')
     new_app.add_argument('--theme',choices=['forest','midnight'],default='forest')
-    new_app.add_argument('--kind',choices=['tasks','notes'],default='tasks')
+    new_app.add_argument('--kind',choices=['tasks','notes','flashcards'],default='tasks')
     app_sub.add_parser('inspect',help='Read-only source integrity check').add_argument('name')
     app_sub.add_parser('ai-status',help='Read configured app-model provider readiness without billable calls')
     app_sub.add_parser('propose',help='Ask configured loopback Ollama for a restricted app blueprint').add_argument('goal')
@@ -170,6 +175,10 @@ def dispatch(engine,args):
         studio=AppStudio(engine.store.workspace)
         if args.action=='create':
             return studio.create(args.name,title=args.title,theme=args.theme,kind=args.kind)
+        if args.action=='free-build':
+            from .free_builder import build_from_brief
+            return build_from_brief(engine.store.workspace,args.brief,
+                                   name=args.name,title=args.title,theme=args.theme)
         if args.action=='inspect':
             return studio.inspect(args.name)
         if args.action=='ai-status':
