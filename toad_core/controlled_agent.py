@@ -20,6 +20,7 @@ from .git_drafts import GitDraft
 from .models import OllamaAdapter, ModelError
 from .repair import validate_repair
 from .schema import PackageError, package_digest
+from .sagecode_actions import PROJECT_ACTIONS, SageProjectActionAdapter
 
 ACTIONS = ("read_file", "inspect_candidate", "propose_edit", "test_candidate", "finish")
 MAX_STEPS = 12
@@ -34,12 +35,13 @@ def _json_bytes(data):
 class ControlledAgent:
     """An experimental secondary agent loop; existing MissionEngine remains default."""
 
-    def __init__(self, engine: Engine, identifier: str, *, candidate_id=None, model=None, worker=None):
+    def __init__(self, engine: Engine, identifier: str, *, candidate_id=None, model=None, worker=None, project_tools=None):
         if not identifier or not all(c.isalnum() or c in "-_" for c in identifier) or len(identifier) > 64:
             raise ValueError("Invalid trajectory identifier")
         self.engine = engine
         self.model = model or OllamaAdapter()
         self.worker = worker
+        self.project_adapter = None
         self.path = engine.store.workspace / "agent-trajectories" / (identifier + ".json")
         self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         if self.path.is_symlink():
@@ -50,13 +52,30 @@ class ControlledAgent:
                 raise PackageError("Unsupported trajectory format")
             if candidate_id is not None and candidate_id not in self.state.get("allowed_candidates", []):
                 raise PackageError("Candidate ID is outside this trajectory")
+            binding = self.state.get("sage_project_binding")
+            if binding is not None:
+                if not isinstance(binding, dict) or set(binding) != {"project_id", "baseline_revision", "candidate_id"}:
+                    raise PackageError("Invalid project binding in agent trajectory")
+                if project_tools is None:
+                    raise PackageError("Project-bound trajectory requires trusted project tools to resume")
+                if candidate_id is not None and candidate_id != binding["candidate_id"]:
+                    raise PackageError("Cannot rebind project to a different candidate")
+                self.project_adapter = SageProjectActionAdapter(engine, binding["candidate_id"], project_tools)
+                if self.project_adapter.binding != binding:
+                    raise PackageError("Trusted project binding changed")
+            elif project_tools is not None:
+                raise PackageError("Cannot attach source tools to an existing unbound agent trajectory")
         else:
             if not candidate_id:
                 raise ValueError("New agent trajectory requires an explicit candidate ID")
             engine.get(candidate_id)
+            if project_tools is not None:
+                self.project_adapter = SageProjectActionAdapter(engine, candidate_id, project_tools)
             self.state = {"schema": "toad-agent-trajectory-v1", "id": identifier, "status": "ready", "actions": [],
                           "allowed_candidates": [candidate_id],
                           "model_calls": 0, "started_at": time.time(), "pending": None}
+            if self.project_adapter is not None:
+                self.state["sage_project_binding"] = dict(self.project_adapter.binding)
             self._save()
 
     def _save(self):
@@ -73,7 +92,16 @@ class ControlledAgent:
             os.fsync(writer.fileno())
         os.replace(path, self.path)
 
+    def _allowed_actions(self):
+        # A project-bound trajectory never mixes independent candidate tests
+        # with source-only draft revisions. Legacy agents keep their tools.
+        return PROJECT_ACTIONS + ("finish",) if self.project_adapter is not None else ACTIONS
+
     def _observation(self, tool, action):
+        if tool in PROJECT_ACTIONS:
+            if self.project_adapter is None:
+                raise PackageError("SageCode project tools are not authorized for this agent")
+            return self.project_adapter.execute(action)
         identifier = action.get("candidate_id")
         allowed = self.state.get("allowed_candidates", [])
         if tool == "finish":
@@ -86,7 +114,8 @@ class ControlledAgent:
             candidate = self.engine.get(identifier)
             receipt = self.engine.store.latest_receipt(identifier)
             verified = bool(
-                package_digest(candidate["manifest"]) == candidate["digest"]
+                self.project_adapter is None
+                and package_digest(candidate["manifest"]) == candidate["digest"]
                 and candidate.get("verification") == "verified"
                 and receipt is not None
                 and receipt.get("candidate_id") == identifier
@@ -96,11 +125,16 @@ class ControlledAgent:
                 and receipt.get("backend") == "docker"
                 and receipt.get("cleanup_ok") is True
             )
-            return {"finished": True, "candidate_id": identifier,
-                    "verification": "verified" if verified else "unverified",
-                    "receipt_id": receipt["id"] if verified else None,
-                    "owner_review_required": True, "installed": False,
-                    "message": str(action.get("message", ""))[:500]}
+            result = {"finished": True, "candidate_id": identifier,
+                      "verification": "verified" if verified else "unverified",
+                      "receipt_id": receipt["id"] if verified else None,
+                      "owner_review_required": True, "installed": False,
+                      "message": str(action.get("message", ""))[:500]}
+            if self.project_adapter is not None:
+                source = self.project_adapter.status()
+                result.update({"project_id": source["project_id"], "project_revision": source["revision"],
+                               "project_verification": "unverified", "release_allowed": False})
+            return result
         if not isinstance(identifier, str) or identifier not in allowed:
             raise PackageError("Candidate must belong to this trajectory")
         candidate = self.engine.get(identifier)
@@ -151,10 +185,13 @@ class ControlledAgent:
         """Only one explicit allowed action per model response; no arbitrary commands."""
         if self.state["status"] in ("awaiting_review", "completed", "blocked"):
             raise PackageError("Terminal trajectory cannot execute another action")
-        if not isinstance(message, dict) or message.get("action") not in ACTIONS:
+        if not isinstance(message, dict) or message.get("action") not in self._allowed_actions():
             raise PackageError("Agent model must return one allowlisted action")
         tool = message["action"]
-        key = hashlib.sha256(_json_bytes(message)).hexdigest()
+        try:
+            key = hashlib.sha256(_json_bytes(message)).hexdigest()
+        except (ValueError, TypeError, UnicodeError, RecursionError) as exc:
+            raise PackageError("Invalid agent action JSON") from exc
         if any(a.get("action_hash") == key for a in self.state["actions"]):
             raise PackageError("Repeated action refused; inspect the prior observation")
         self.state["pending"] = {"action_hash": key, "tool": tool}
@@ -175,14 +212,24 @@ class ControlledAgent:
             raise PackageError("Model call limit reached")
         self.state["model_calls"] += 1
         self._save()
+        project_context = None
+        if self.project_adapter is not None:
+            project = self.project_adapter.status()
+            project_context = {"project_id": project["project_id"], "revision": project["revision"],
+                               "source_only": True, "review_status": "pending_review",
+                               "release_allowed": False}
         prompt = json.dumps({
-            "goal": goal, "allowed_actions": ACTIONS,
+            "goal": goal, "allowed_actions": self._allowed_actions(),
+            "project_context": project_context,
             "instructions": ["Respond with one JSON object specifying exactly one allowlisted action.",
                              "No shell commands, host file paths, network access, tool installation or policy changes.",
                              "Finish must name the allowed candidate revision when edits created multiple revisions.",
                              "Finish means awaiting human review, not installation or deployment.",
                              "Existing tests, permissions, dependencies and protected core cannot be modified.",
-                             "Observe results before proposing another action; finish if blocked."],
+                             "Observe results before proposing another action; finish if blocked.",
+                             "Project actions, when available, are source-only proposals; never claim they were executed.",
+                             "Project actions cannot restore drafts, approve changes, execute commands or grant permissions.",
+                             "Project edit proposals require the current expected_revision; project IDs and roots are trusted bindings."],
             "allowed_candidate_ids": self.state.get("allowed_candidates", []),
             "observations": self.state["actions"][-5:],
         }, ensure_ascii=False)
