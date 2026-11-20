@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import copy
 import hashlib
-import json
 import re
 import time
 import uuid
@@ -83,13 +82,25 @@ class SageRevisionTestGate:
                               "executed": item.get("executed") is True,
                               "cleanup_ok": item.get("cleanup_ok") is True,
                               "category": str(item.get("category", "unknown"))[:60]})
+        # A worker that claims success while also claiming a blocked run,
+        # incomplete cases or failure categories is supplying inconsistent
+        # evidence. Fail closed instead of turning contradictions into "pass".
+        if result.get("passed") is True and (
+            result.get("blocked_reason") not in (None, "")
+            or len(summaries) != len(manifest["tests"])
+            or any(not x["passed"] or not x["executed"] or not x["cleanup_ok"]
+                   or x["category"] != "passed" for x in summaries)
+        ):
+            return None
         image = result.get("image_id")
         image_ok = isinstance(image, str) and bool(_IMAGE_ID.fullmatch(image))
         full_pass = (
             result.get("passed") is True and result.get("executed") is True
             and result.get("cleanup_ok") is True and image_ok
             and len(summaries) == len(manifest["tests"])
-            and all(x["passed"] and x["executed"] and x["cleanup_ok"] for x in summaries)
+            and all(x["passed"] and x["executed"] and x["cleanup_ok"]
+                    and x["category"] == "passed" for x in summaries)
+            and result.get("blocked_reason") in (None, "")
         )
         # Fewer cases are valid for a worker that stopped at its first failure.
         executed = result.get("executed") is True and any(x["executed"] for x in summaries)
