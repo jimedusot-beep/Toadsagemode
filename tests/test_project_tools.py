@@ -216,6 +216,21 @@ class SageProjectToolTests(unittest.TestCase):
         with self.assertRaises(PackageError):
             self.tools.restore("bad-revision", expected_revision=self.baseline)
 
+    def test_invalid_unicode_search_is_controlled_error(self):
+        for term in ("\ud800", "repair\udfff", "\udc00"):
+            with self.subTest(term=repr(term)):
+                with self.assertRaisesRegex(PackageError, "Invalid SageCode search term"):
+                    self.tools.search(term)
+        self.assertEqual(self.tools.status()["revision"], self.baseline)
+
+    def test_invalid_unicode_edit_is_controlled_error_without_revision(self):
+        for source in ("\ud800", "title = '\udfff'", "\udc00"):
+            with self.subTest(source=repr(source)):
+                with self.assertRaisesRegex(PackageError, "Invalid or oversized SageCode edit"):
+                    self.tools.propose_edit("README.md", source, expected_revision=self.baseline)
+        self.assertEqual(self.tools.status()["revision"], self.baseline)
+        self.assertEqual(len(list(self.tools.revisions.iterdir())), 1)
+
     def test_approved_or_executable_result_is_never_fabricated(self):
         original = self.tools.status()
         self.assertFalse(original["release_allowed"])
