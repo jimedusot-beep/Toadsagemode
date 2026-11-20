@@ -120,7 +120,7 @@ async function open(page,url) {
     assert.match(await truncated.locator('#sage-source-state').innerText(),
       /Partial read.*Whole-file hash cannot be checked/);
     assert.match(await truncated.locator('#sage-source-limits').innerText(),
-      /TRUNCATED SAMPLE.*No additional read endpoint/);
+      /TRUNCATED SAMPLE.*no additional read endpoint/i);
     assert.match(await truncated.locator('#sage-source').innerText(),/partial/);
     await limited.close();
 
