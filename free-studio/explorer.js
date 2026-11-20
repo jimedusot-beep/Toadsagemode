@@ -15,6 +15,9 @@
       projects: $('#explorer-project-list'), count: $('#explorer-count'),
       state: $('#explorer-project-state'), title: $('#explorer-project-title'),
       summary: $('#explorer-project-summary'), files: $('#explorer-file-list'),
+      searchForm: $('#explorer-search-form'), searchInput: $('#explorer-search-input'),
+      searchButton: $('#explorer-search-button'), searchClear: $('#explorer-search-clear'),
+      searchStatus: $('#explorer-search-status'), searchResults: $('#explorer-search-results'),
       empty: $('#explorer-empty'), path: $('#explorer-selected-path'),
       source: $('#explorer-source'), revisionState: $('#explorer-revision-state'),
       revisionSummary: $('#explorer-revision-summary'),
@@ -50,6 +53,56 @@
     function selectedProject() {
       return catalog?.projects.find(p => p.id === selectedId) || null;
     }
+    function clearSearch() {
+      ui.searchInput.value = '';
+      ui.searchResults.replaceChildren();
+      ui.searchClear.disabled = true;
+      ui.searchStatus.textContent = selectedProject()
+        ? 'No search active. Enter a term to search this local example.'
+        : 'Select a fixture project before searching.';
+    }
+    function showSearchResults(result) {
+      ui.searchResults.replaceChildren();
+      ui.searchClear.disabled = false;
+      if (!result.matches.length) {
+        ui.searchStatus.textContent = 'No fixture matches found for the requested term. This is not a backend search.';
+        return;
+      }
+      ui.searchStatus.textContent = result.limited
+        ? 'Showing the first 50 fixture matches (limit reached). More matches may exist. No live service was searched.'
+        : result.matches.length + ' fixture matches found. No live service was searched.';
+      for (const match of result.matches) {
+        const li = node('li');
+        const button = node('button', 'explorer-search-result');
+        button.type = 'button';
+        const place = match.kind === 'filename' ? 'filename' : 'line ' + match.line;
+        button.setAttribute('aria-label', 'Open sample source result: ' + match.path + ', ' + place);
+        button.append(
+          node('strong', '', match.path + ' · ' + place),
+          node('span', 'explorer-search-snippet', match.snippet)
+        );
+        button.addEventListener('click', () => {
+          if (selectedProject()?.id !== result.project_id) {
+            clearSearch();
+            announce('Search result is stale; select a fixture project and search again.', true);
+            return;
+          }
+          selectedPath = match.path;
+          render();
+          if (match.line > 0) {
+            const computed = getComputedStyle(ui.source);
+            const lineHeight = Number.parseFloat(computed.lineHeight) || 21;
+            ui.source.scrollTop = Math.max(0, (match.line - 1) * lineHeight - lineHeight * 2);
+          }
+          ui.source.focus({preventScroll:true});
+          announce('Opened sample file ' + match.path +
+            (match.line ? ', line ' + match.line : ', filename match') +
+            '. Source remains read-only fixture text.');
+        });
+        li.append(button);
+        ui.searchResults.append(li);
+      }
+    }
     function renderProjects() {
       clear(ui.projects);
       ui.count.textContent = catalog ? catalog.projects.length + ' examples' : '0 examples';
@@ -64,6 +117,7 @@
         button.addEventListener('click', () => {
           selectedId = project.id;
           selectedPath = project.files[0]?.path || null;
+          clearSearch();
           render();
           announce('Loaded fixture project ' + project.title + '. Source is read-only.');
         });
@@ -118,6 +172,7 @@
       const file = project?.files.find(item => item.path === selectedPath);
       ui.path.textContent = file ? file.path : 'No file selected';
       ui.source.textContent = file ? file.content : 'No source files are available for this example.';
+      ui.source.scrollTop = 0;
     }
     const MAX_HIGHLIGHT_LINES = 600;
     function diffText(el, changes, side) {
@@ -184,6 +239,9 @@
       ui.title.textContent = project?.title || 'No project selected';
       ui.summary.textContent = project?.summary || 'No example project is available.';
       badge(ui.state, project?.state || 'blocked');
+      ui.searchInput.disabled = !project;
+      ui.searchButton.disabled = !project;
+      if (!project) ui.searchClear.disabled = true;
       clear(ui.files);
       ui.empty.hidden = Boolean(project?.files.length);
       if (project?.files.length) renderFolder(fileHierarchy(project.files), ui.files);
@@ -212,6 +270,7 @@
       catalog = null;
       selectedId = null;
       selectedPath = null;
+      clearSearch();
       render();
       ui.retry.hidden = true;
       announce('Loading local sample projects…');
@@ -260,11 +319,31 @@
       decisions.clear();
       selectedId = catalog.projects[0]?.id || null;
       selectedPath = catalog.projects[0]?.files[0]?.path || null;
+      clearSearch();
       render();
       ui.importFile.value = '';
       ui.importButton.disabled = true;
       announce('Loaded ' + catalog.projects.length + ' local imported fixture projects. No production project imported.');
     }
+    ui.searchForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const project = selectedProject();
+      if (!project) return;
+      let result;
+      try {
+        result = api.searchFixtureProject(project, ui.searchInput.value, 50);
+      } catch (_) {
+        ui.searchResults.replaceChildren();
+        ui.searchClear.disabled = false;
+        ui.searchStatus.textContent = 'Search blocked: enter 1–100 UTF-8 bytes of plain text without control characters.';
+        return;
+      }
+      showSearchResults(result);
+    });
+    ui.searchClear.addEventListener('click', () => {
+      clearSearch();
+      ui.searchInput.focus();
+    });
     ui.importFile.addEventListener('change', () => {
       ui.importButton.disabled = !ui.importFile.files?.length;
     });

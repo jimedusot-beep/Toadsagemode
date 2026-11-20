@@ -8,6 +8,16 @@ The optional **Inspect selected fixture JSON** control allows the owner to impor
 
 The verified and testing examples are **sample labels only**, not evidence. Every status badge says **Fixture** and **sample only**. Source uses DOM textContent, never executable HTML, iframe or eval. The existing separate sandboxed reviewed-template previews remain unchanged.
 
+## Explorer V1.2 — local fixture source search
+
+A searchable source panel offers a **user-submitted, bounded** filename/content term with keyboard Enter or a touch-friendly Search button. Results are inert text-only buttons that navigate to the corresponding source file, moving focus to its read-only source viewer and scrolling toward a one-based matching line.
+
+This **fixture-only** search intentionally mirrors the *shape* of Agent A's [draft SageCode Tools V1 backend-to-Studio contract](https://github.com/jimedusot-beep/Toadsagemode/blob/agent-a/sagecode-tools-v1-20261119/docs/SAGECODE_V1_CONTRACT.md) (PR #46): `project_id`, `term`, `matches` with `path`, `line`, `snippet`, `kind`, and a `limited` flag. Filename matches have line 0; content matches use one-based lines. Default limit is 50 and 100 maximum, and the UI always says when it has reached the limit.
+
+**Critical differences from the backend:** The fixture adapter adds `source: "local-fixture-only"`, sets `revision: null` (not a fabricated revision hash), searches only already-validated fixture text in page memory, and compares case with JavaScript lowercase (not full Python Unicode casefold). It does **not** issue an API request, authorize project access, index the host filesystem, or establish exhaustive search. Search results are cleared on project changes, successful fixture import, reset or failed built-in fixture loading to prevent stale navigation. A bounded result only means the first 50 matches were displayed; there may be more.
+
+The Agent A contract is an **unmerged draft Python interface**; no real HTTP endpoint exists to connect to. Actual revision IDs, authorization, immutable file hashes, chunked 16-kB reads and any test receipts require a separately reviewed server-side integration.
+
 ## Agent A interface boundary
 
 The planned Agent A document docs/SAGECODE_V1_CONTRACT.md was not available on the parent branch at the time of this work. No live service endpoint or API schema is invented here.
@@ -30,7 +40,7 @@ From a trusted checkout of this branch:
     python -m unittest tests.test_free_studio_bundles -v
     python tools/build_free_studio_bundles.py --output /tmp/toad-explorer-build
 
-The automated WebKit test covers iPhone 13 and 834 px tablet viewports, keyboard file navigation, focus styles, responsive overflow, source safety, approval confirmation/cancellation, rejection, empty project, testing/failed/verified sample labels, failed fixture load, invalid JSON/data and local fixture imports, unavailable storage, long filenames, independent diff hunks and complete large-file fallback, and large malicious-looking source. **Automated WebKit is not physical Safari/iPad testing.** The owner must still test real iPad Safari and VoiceOver, large text, touch targets and browser dialogs.
+The automated WebKit test covers iPhone 13 and 834 px tablet viewports, keyboard file navigation, focus styles, responsive overflow, source safety, approval confirmation/cancellation, rejection, empty project, testing/failed/verified sample labels, failed fixture load, invalid JSON/data and local fixture imports, searched file/line navigation and capped result warnings, unavailable storage, long filenames, independent diff hunks and complete large-file fallback, and large malicious-looking source. **Automated WebKit is not physical Safari/iPad testing.** The owner must still test real iPad Safari and VoiceOver, large text, touch targets and browser dialogs.
 
 The existing bundle builder packages the five new Explorer assets together with the unchanged Free Studio templates and six reviewed iframe previews; the original ZIP verification and digest checks remain.
 

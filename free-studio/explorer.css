@@ -52,3 +52,19 @@
 
 /* Keep precision/fallback warnings distinguishable from code or test status. */
 #explorer-diff-status{border-left:3px solid #b6dfb8;padding:8px 12px;background:#20372a;border-radius:4px;overflow-wrap:anywhere}
+
+/* Fixture-only source search: scrollable, keyboard-reachable and mobile-safe. */
+.explorer-search-form{margin:16px 0 12px;padding:13px;border:1px solid #4a7357;border-radius:12px;background:#112519}
+.explorer-search-form label{display:block;font-weight:750;margin-bottom:8px}
+.explorer-search-controls{display:flex;align-items:stretch;flex-wrap:wrap;gap:8px}
+.explorer-search-controls input{flex:1 1 210px;min-width:0}
+.explorer-search-controls button{flex:0 1 auto;min-height:48px;padding:10px 14px}
+.explorer-search-output{border:1px solid #496c54;border-radius:12px;margin:10px 0 17px;padding:12px;background:#102118}
+.explorer-search-output h3{font-size:.94rem;margin:0 0 5px}
+#explorer-search-status{color:#cde7d1;font-size:.85rem;min-height:1.5rem;overflow-wrap:anywhere}
+#explorer-search-results{list-style:none;padding:0;margin:0;max-height:280px;overflow:auto}
+#explorer-search-results li{margin:7px 0}
+.explorer-search-result{display:flex;flex-direction:column;gap:5px;align-items:flex-start;text-align:left;width:100%;min-width:0;min-height:50px;background:#213c2a;color:#e8f9ec;border:1px solid #6b9678;border-radius:10px;padding:10px 12px;overflow-wrap:anywhere}
+.explorer-search-result strong{font-size:.84rem}
+.explorer-search-snippet{font:.78rem/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#c6e1cd;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+@media(max-width:550px){.explorer-search-controls{flex-direction:column}.explorer-search-controls button{width:100%}.explorer-search-result{min-height:48px}}

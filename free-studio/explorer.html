@@ -63,6 +63,22 @@
           </div>
           <h3 id="explorer-project-title">No project selected</h3>
           <p id="explorer-project-summary" class="hint">Select a project to inspect its files and proposed revision.</p>
+          <form id="explorer-search-form" class="explorer-search-form" role="search" aria-label="Search sample project files">
+            <label for="explorer-search-input">Search example filenames and source</label>
+            <div class="explorer-search-controls">
+              <input id="explorer-search-input" type="search" maxlength="100" autocomplete="off"
+                placeholder="Example: tip, README, or planner"
+                aria-describedby="explorer-search-help" disabled>
+              <button id="explorer-search-button" type="submit" class="secondary" disabled>Search example</button>
+              <button id="explorer-search-clear" type="button" class="secondary" disabled>Clear results</button>
+            </div>
+            <p class="hint" id="explorer-search-help">Searches only local fixture files. No AI or server-side search is called. Results are capped at 50; a filename match has line 0.</p>
+          </form>
+          <div class="explorer-search-output" aria-labelledby="explorer-search-results-heading">
+            <h3 id="explorer-search-results-heading">Search results</h3>
+            <p id="explorer-search-status" role="status" aria-live="polite">Select a project to search its sample source.</p>
+            <ul id="explorer-search-results" aria-label="Sample project source search results"></ul>
+          </div>
           <div class="explorer-browse-grid">
             <nav aria-label="Project file navigation" class="explorer-file-panel">
               <h3>Source file tree</h3>

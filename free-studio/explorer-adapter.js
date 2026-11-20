@@ -148,6 +148,47 @@
   function diffLines(before, after) {
     return compareSource(before, after).lines;
   }
+  // Browser-side fixture search modeled after Agent A's source-only
+  // SageCode Tools V1 search SHAPE. No backend connection or authority.
+  function searchFixtureProject(project, term, limit = 50) {
+    if (!object(project) || typeof project.id !== 'string' || !ID.test(project.id) ||
+        !Array.isArray(project.files) || project.files.length > 24) {
+      fail('invalid project for fixture search');
+    }
+    if (typeof term !== 'string' || !term.trim() ||
+        /[\u0000-\u001f\u007f]/.test(term) ||
+        new TextEncoder().encode(term).length > 100) {
+      fail('search term must be 1–100 UTF-8 bytes of ordinary text');
+    }
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) fail('search limit');
+    const needle = term.toLowerCase();
+    const matches = [];
+    const files = [...project.files].sort((a,b) =>
+      a.path.toLowerCase().localeCompare(b.path.toLowerCase()));
+    function push(path, line, snippet, kind) {
+      matches.push({path, line, snippet:snippet.slice(0,200), kind});
+      return matches.length >= limit;
+    }
+    for (const file of files) {
+      if (!object(file)) fail('invalid source record');
+      const path = pathName(file.path);
+      const content = short(file.content, MAX_SOURCE_CHARS, 'searchable source', true);
+      if (path.toLowerCase().includes(needle)) {
+        if (push(path, 0, path, 'filename')) return result(true);
+      }
+      const lines = content.split(/\r\n|\n|\r/);
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].toLowerCase().includes(needle)) {
+          if (push(path, i + 1, lines[i], 'content')) return result(true);
+        }
+      }
+    }
+    return result(false);
+    function result(limited) {
+      return {project_id:project.id, revision:null, source:'local-fixture-only',
+              term, matches, limited};
+    }
+  }
   async function loadFixtures(fetcher) {
     const response = await fetcher('./explorer-fixtures.json', {cache: 'no-store'});
     if (!response || !response.ok) throw new Error('Fixture catalog unavailable. Nothing was loaded.');
@@ -160,7 +201,7 @@
     catch (_) { throw new Error('Fixture catalog is not valid JSON.'); }
     return validateCatalog(raw);
   }
-  const api = Object.freeze({SCHEMA, STATES, validateCatalog, compareSource, diffLines, loadFixtures});
+  const api = Object.freeze({SCHEMA, STATES, validateCatalog, compareSource, diffLines, searchFixtureProject, loadFixtures});
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.SageExplorerAdapter = api;
 })();
