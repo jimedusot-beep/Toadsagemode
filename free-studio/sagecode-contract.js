@@ -9,7 +9,8 @@
       state:$('#sage-state'),project:$('#sage-project-id'),
       revision:$('#sage-revision'),baseline:$('#sage-baseline'),
       evidence:$('#sage-evidence'),approval:$('#sage-approval'),
-      tree:$('#sage-tree'),sourceName:$('#sage-source-name'),
+      tree:$('#sage-tree'),emptyTree:$('#sage-empty-tree'),
+      sourceName:$('#sage-source-name'),navNote:$('#sage-navigation-note'),
       sourceState:$('#sage-source-state'),source:$('#sage-source'),
       limits:$('#sage-source-limits'),
       searchState:$('#sage-search-state'),searchResults:$('#sage-search-results'),
@@ -36,7 +37,9 @@
       ui.evidence.textContent='Not available';
       ui.approval.textContent='Not authorized';
       ui.tree.replaceChildren();
+      ui.emptyTree.hidden=true;
       ui.sourceName.textContent='No source selected';
+      ui.navNote.textContent='No source line selected.';
       ui.sourceState.textContent='No source evidence loaded.';
       ui.source.textContent='No source to display.';
       ui.limits.textContent='A partial read cannot establish the entire source digest.';
@@ -56,24 +59,40 @@
       selected=name;
       ui.sourceName.textContent=source.path;
       ui.source.textContent=source.content;
-      const part=source.truncated ? 'Partial read' : 'Full sample read';
+      // A later-page response may say truncated:false because no LATER pages
+      // remain; this is still not the whole file if start_line > 1.
+      const partial=source.truncated || source.start_line>1;
+      const visibleLines=adapter.countLines(source.content);
+      const visibleEnd=visibleLines ? source.start_line+visibleLines-1 : source.start_line;
+      const part=partial ? 'Partial read' : 'Full sample read';
       const hash=check.check==='fixture_hash_matches'
         ? 'SHA-256 matches sample metadata; no authenticity or safety proof.'
         : 'Whole-file hash cannot be checked from a partial view.';
-      ui.sourceState.textContent=part+' · line '+source.start_line+
+      ui.sourceState.textContent=part+
+        (visibleLines ? ' · visible lines '+source.start_line+'–'+visibleEnd :
+          ' · empty excerpt')+
         ' of '+source.total_lines+' · '+hash;
       ui.limits.textContent=source.truncated
-        ? 'TRUNCATED SAMPLE: the rest of the source is unavailable on this fixture-only page. No additional read endpoint exists.'
-        : 'Read-only example source. A hash match is not a test, trusted server attestation or approval.';
+        ? 'TRUNCATED SAMPLE: some source is omitted. The page has no additional read endpoint; displayed content is not complete.'
+        : source.start_line>1
+          ? 'PARTIAL SAMPLE: this later-page read omits earlier lines even though truncated=false. No whole-file SHA-256 check or previous-page endpoint exists.'
+          : 'Read-only example source. A hash match is not a test, trusted server attestation or approval.';
       ui.tree.querySelectorAll('button').forEach(btn=>{
         if(btn.dataset.path===name)btn.setAttribute('aria-current','true');
         else btn.removeAttribute('aria-current');
       });
       ui.source.scrollTop=0;
-      if(line>0 && line>=source.start_line) {
+      if(line>0 && (line<source.start_line || line>visibleEnd || visibleLines===0)) {
+        ui.navNote.textContent='Sample search hit at line '+line+
+          ' is OUTSIDE the loaded excerpt (visible '+source.start_line+'–'+visibleEnd+
+          '). No additional source can be fetched here; the matching line is not displayed.';
+      } else if(line>0) {
         const css=getComputedStyle(ui.source);
         const height=Number.parseFloat(css.lineHeight)||20;
         ui.source.scrollTop=Math.max(0,(line-source.start_line-2)*height);
+        ui.navNote.textContent='Sample source navigated to visible line '+line+'.';
+      } else {
+        ui.navNote.textContent='Read-only fixture file selected. No source line was requested.';
       }
       if(focus)ui.source.focus({preventScroll:true});
     }
@@ -88,6 +107,7 @@
       ui.evidence.textContent='Null: no execution, test run or receipt';
       ui.approval.textContent='False: no owner approval or release permission';
       ui.tree.replaceChildren();
+      ui.emptyTree.hidden=view.tree.entries.some(item=>item.kind==='file');
       for(const item of view.tree.entries){
         const li=elem('li');
         if(item.kind==='directory') {
@@ -105,7 +125,9 @@
       ui.searchResults.replaceChildren();
       ui.searchState.textContent='Example term: "'+view.search.term+'" · '+
         view.search.matches.length+' fixture hit(s).'+
-        (view.search.limited?' Sample result limit reached; more hits may exist.':' Not a live search.');
+        (view.search.limited?' Sample result limit reached; more hits may exist.' :
+          view.search.matches.length===0 ? ' No sample matches; no live search occurred.' :
+          ' Not a live search.');
       for(const hit of view.search.matches){
         const li=elem('li');
         const button=elem('button','explorer-search-result');

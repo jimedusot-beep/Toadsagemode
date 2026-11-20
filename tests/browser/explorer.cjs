@@ -323,6 +323,79 @@ function fixture() {
       document.documentElement.scrollWidth <= window.innerWidth + 1),true);
     await capContext.close();
 
+    // Project switching must not discard keyboard focus when the list rerenders.
+    const chooseFailed=page.getByRole('button',{
+      name:'Open fixture project: Notes Debugging · example'
+    });
+    await chooseFailed.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#explorer-project-list [aria-pressed="true"]')
+      .evaluate(el=>document.activeElement===el),true);
+    assert.match(await page.locator('#explorer-state-explanation').innerText(),
+      /Simulated failed test output.*No real test ran/);
+    const chooseVerified=page.getByRole('button',{
+      name:'Open fixture project: Flashcards · status example'
+    });
+    await chooseVerified.focus();
+    await page.keyboard.press('Enter');
+    assert.match(await page.locator('#explorer-state-explanation').innerText(),
+      /SIMULATED verified label.*NO independent verification evidence/);
+
+    // Editing the search term invalidates obsolete result buttons immediately.
+    await page.getByRole('button',{
+      name:'Open fixture project: Study Planner · example'
+    }).click();
+    await page.fill('#explorer-search-input','SRC');
+    await page.getByRole('button',{name:'Search example'}).click();
+    assert.equal(await page.locator('#explorer-search-results button').count(),2);
+    await page.fill('#explorer-search-input','completely-different-term');
+    assert.equal(await page.locator('#explorer-search-results button').count(),0);
+    assert.match(await page.locator('#explorer-search-status').innerText(),
+      /Search term changed.*Run Search again/);
+
+    // Reset wins over an import whose File.arrayBuffer has not yet completed.
+    const resetCtx=await browser.newContext({...devices['iPhone 13']});
+    const resetPage=await resetCtx.newPage();
+    await ready(resetPage,url);
+    await resetPage.evaluate(()=>{
+      const original=File.prototype.arrayBuffer;
+      File.prototype.arrayBuffer=function(){
+        if(this.name!=='delayed-fixture.json')return original.call(this);
+        return new Promise(resolve=>{
+          window.releaseFixtureImport=()=>resolve(original.call(this));
+        });
+      };
+    });
+    const delayed=fixture();
+    delayed.projects=[delayed.projects[4]]; // Only one empty demo.
+    await resetPage.setInputFiles('#explorer-import-file',{
+      name:'delayed-fixture.json',mimeType:'application/json',
+      buffer:Buffer.from(JSON.stringify(delayed))
+    });
+    await resetPage.getByRole('button',{name:'Inspect selected fixture JSON'}).click();
+    await resetPage.waitForFunction(()=>typeof window.releaseFixtureImport==='function');
+    await resetPage.getByRole('button',{name:'Restore built-in examples'}).click();
+    await resetPage.waitForFunction(()=>document.querySelector('#explorer-notice')
+      .textContent.includes('Loaded 5 fixture projects.'));
+    await resetPage.evaluate(()=>window.releaseFixtureImport());
+    await resetPage.waitForTimeout(120);
+    assert.equal(await resetPage.locator('#explorer-project-list button').count(),5);
+    assert.doesNotMatch(await resetPage.locator('#explorer-notice').innerText(),
+      /imported fixture projects/);
+    await resetCtx.close();
+
+    const slim=await browser.newContext({viewport:{width:320,height:650},
+      hasTouch:true,isMobile:true});
+    const slimPage=await slim.newPage();
+    await ready(slimPage,url);
+    await slimPage.getByRole('button',{name:'Open fixture project: Empty Project · example'}).click();
+    assert.equal(await slimPage.evaluate(()=>
+      document.documentElement.scrollWidth<=window.innerWidth+1),true);
+    assert.equal(await slimPage.getByRole('button',{
+      name:'Restore built-in examples'
+    }).isVisible(),true);
+    await slim.close();
+
     assert.deepEqual(errors, [],'No WebKit page errors');
     assert.deepEqual(offsite, [],'No requests off the local Studio origin');
     await phone.close();

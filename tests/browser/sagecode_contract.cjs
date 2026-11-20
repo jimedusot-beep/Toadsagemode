@@ -120,7 +120,7 @@ async function open(page,url) {
     assert.match(await truncated.locator('#sage-source-state').innerText(),
       /Partial read.*Whole-file hash cannot be checked/);
     assert.match(await truncated.locator('#sage-source-limits').innerText(),
-      /TRUNCATED SAMPLE.*No additional read endpoint/);
+      /TRUNCATED SAMPLE.*no additional read endpoint/i);
     assert.match(await truncated.locator('#sage-source').innerText(),/partial/);
     await limited.close();
 
@@ -153,6 +153,120 @@ async function open(page,url) {
       assert.equal(await p.locator('#sage-tree button').count(),0);
       await ctx.close();
     }
+
+    // Revision-section navigation is review-only: keyboard-accessible links,
+    // no fake revision-history, apply, restore, approval or execution controls.
+    const narrow=await browser.newContext({viewport:{width:320,height:650},
+      hasTouch:true,isMobile:true});
+    const narrowPage=await narrow.newPage();
+    await open(narrowPage,url);
+    const sections=narrowPage.getByRole('navigation',{name:'Inspector sections'});
+    assert.equal(await sections.getByRole('link').count(),3);
+    const diffLink=sections.getByRole('link',{name:'Proposed revision diff'});
+    await diffLink.focus();
+    assert.notEqual(await diffLink.evaluate(el=>getComputedStyle(el).outlineStyle),'none');
+    await narrowPage.keyboard.press('Enter');
+    assert.equal(await narrowPage.evaluate(()=>location.hash),'#sage-proposal-heading');
+    for(const name of ['Current sample source','Sample search','Proposed revision diff']){
+      const link=sections.getByRole('link',{name});
+      assert((await link.boundingBox()).height>=44,'Section link touch height: '+name);
+    }
+    assert.equal(await narrowPage.evaluate(()=>
+      document.documentElement.scrollWidth<=window.innerWidth+1),true);
+    await narrow.close();
+
+    // A response can report truncated:false on the FINAL page while still
+    // missing preceding lines. Never call it whole-file SHA-256 checked.
+    const finalPage=fixture();
+    finalPage.sources[1].start_line=5;
+    finalPage.sources[1].total_lines=20;
+    finalPage.sources[1].content='print("tail")\n';
+    finalPage.sources[1].truncated=false;
+    finalPage.search.matches[0].line=1; // Valid result, absent from this excerpt
+    const pagingCtx=await browser.newContext({...devices['iPhone 13']});
+    const paging=await pagingCtx.newPage();
+    await paging.route('**/sagecode-contract-fixture.json',route=>
+      route.fulfill({contentType:'application/json',body:JSON.stringify(finalPage)}));
+    await open(paging,url);
+    await paging.getByRole('button',{name:'Read SageCode fixture source: src/main.py'}).click();
+    assert.match(await paging.locator('#sage-source-state').innerText(),
+      /Partial read.*Whole-file hash cannot be checked/);
+    assert.match(await paging.locator('#sage-source-limits').innerText(),
+      /PARTIAL SAMPLE.*later-page read.*truncated=false/);
+    await paging.getByRole('button',{
+      name:'Open contract example hit: src/main.py, line 1'
+    }).click();
+    assert.match(await paging.locator('#sage-navigation-note').innerText(),
+      /OUTSIDE the loaded excerpt.*matching line is not displayed/);
+    assert.match(await paging.locator('#sage-source').innerText(),/tail/);
+    assert.equal(await paging.locator('#sage-source').evaluate(el=>document.activeElement===el),true);
+    await pagingCtx.close();
+
+    // An empty source manifest must give an explicit, non-misleading message.
+    const empty=fixture();
+    empty.tree.entries=[];empty.sources=[];empty.search.matches=[];empty.proposal=null;
+    const emptyCtx=await browser.newContext({...devices['iPhone 13']});
+    const noFiles=await emptyCtx.newPage();
+    await noFiles.route('**/sagecode-contract-fixture.json',route=>
+      route.fulfill({contentType:'application/json',body:JSON.stringify(empty)}));
+    await open(noFiles,url);
+    assert.equal(await noFiles.locator('#sage-empty-tree').isVisible(),true);
+    assert.equal(await noFiles.locator('#sage-tree button').count(),0);
+    assert.match(await noFiles.locator('#sage-search-state').innerText(),/No sample matches/);
+    assert.match(await noFiles.locator('#sage-proposal-summary').innerText(),/No sample revision/);
+    assert.match(await noFiles.locator('#sage-state').innerText(),/UNVERIFIED/);
+    await emptyCtx.close();
+
+    // Even very long declared paths stay readable without horizontal page overflow.
+    const lengthy=fixture();
+    const name='a'.repeat(115)+'.md';
+    lengthy.tree.entries[0].path=name;
+    lengthy.sources[0].path=name;
+    const longCtx=await browser.newContext({...devices['iPhone 13']});
+    const longPage=await longCtx.newPage();
+    await longPage.route('**/sagecode-contract-fixture.json',route=>
+      route.fulfill({contentType:'application/json',body:JSON.stringify(lengthy)}));
+    await open(longPage,url);
+    await longPage.getByRole('button',{name:'Read SageCode fixture source: '+name}).click();
+    assert.equal(await longPage.locator('#sage-source-name').innerText(),name);
+    assert.equal(await longPage.evaluate(()=>
+      document.documentElement.scrollWidth<=window.innerWidth+1),true);
+    await longCtx.close();
+
+    // The inspector has no dependency on localStorage or other browser persistence.
+    const blockedStorage=await browser.newContext({...devices['iPhone 13']});
+    await blockedStorage.addInitScript(()=>{
+      Object.defineProperty(window,'localStorage',{configurable:true,
+        get(){throw new DOMException('Unavailable','SecurityError');}});
+    });
+    const readOnly=await blockedStorage.newPage();
+    await open(readOnly,url);
+    await readOnly.getByRole('button',{name:'Read SageCode fixture source: src/main.py'}).click();
+    await readOnly.getByRole('button',{name:'Read SageCode fixture source: README.md'}).click();
+    await readOnly.getByRole('button',{name:'Read SageCode fixture source: src/main.py'}).click();
+    assert.match(await readOnly.locator('#sage-source').innerText(),/Hello, SageCode!/);
+    await blockedStorage.close();
+
+    // Invalid fixture data must fail closed without ever showing proposal diff.
+    for(const variant of ['invalid-json','blank-changed-diff','unknown-status-field']){
+      const ctx=await browser.newContext({...devices['iPhone 13']});
+      const screen=await ctx.newPage();
+      await screen.route('**/sagecode-contract-fixture.json',route=>{
+        if(variant==='invalid-json')return route.fulfill({
+          contentType:'application/json',body:'{"unfinished":'});
+        const value=fixture();
+        if(variant==='blank-changed-diff')value.proposal.diff='';
+        else value.status.unexpected='verified';
+        return route.fulfill({contentType:'application/json',body:JSON.stringify(value)});
+      });
+      await screen.goto(url+'/sagecode-contract.html');
+      await screen.getByRole('button',{name:'Retry loading local example'}).waitFor();
+      assert.match(await screen.locator('#sage-notice').innerText(),/Blocked/);
+      assert.equal(await screen.locator('#sage-tree button').count(),0);
+      assert.equal(await screen.locator('#sage-diff').innerText(),'No source diff available.');
+      await ctx.close();
+    }
+
     assert.deepEqual(errors,[]);
     assert.deepEqual(offsite,[]);
     console.log('SageCode Contract Inspector Mobile WebKit PASS: iPhone/tablet, exact source hash, stale revision, partial source, inert diff, blocked states; fixture-only.');
