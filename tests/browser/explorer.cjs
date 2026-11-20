@@ -173,6 +173,11 @@ function fixture() {
     await ready(injection, url);
     await injection.getByRole('button',{name:'Open fixture project: Empty Project · example'}).click();
     await injection.getByRole('button',{name:'Read source: '+longName}).click();
+    await injection.fill('#explorer-search-input','onerror');
+    await injection.getByRole('button',{name:'Search example'}).click();
+    assert.equal(await injection.locator('#explorer-search-results button').count(),1);
+    assert.match(await injection.locator('.explorer-search-snippet').innerText(),/onerror/);
+    assert.equal(await injection.locator('#explorer-search-results img').count(),0);
     assert.match(await injection.locator('#explorer-source').innerText(), /<img src=x/);
     assert.equal(await injection.locator('#explorer-source img').count(),0);
     assert.equal(await injection.evaluate(()=>Boolean(window.explorerXss)),false);
@@ -259,6 +264,64 @@ function fixture() {
     assert.equal(await oversized.evaluate(()=>
       document.documentElement.scrollWidth <= window.innerWidth + 1),true);
     await giant.close();
+
+    // Keyboard-submitted fixture search with contract-compatible line semantics.
+    await page.fill('#explorer-search-input', 'SRC');
+    await page.locator('#explorer-search-input').press('Enter');
+    assert.match(await page.locator('#explorer-search-status').innerText(),
+      /1 fixture matches found/);
+    assert.equal(await page.locator('#explorer-search-results button').count(),1);
+    await page.getByRole('button',{
+      name:'Open sample source result: src/app.js, filename'
+    }).click();
+    assert.equal(await page.locator('#explorer-selected-path').innerText(),'src/app.js');
+    assert.match(await page.locator('#explorer-notice').innerText(),/filename match/);
+    assert.equal(await page.locator('#explorer-source').evaluate(el =>
+      document.activeElement === el),true,'Search navigation focuses the source reader');
+
+    await page.fill('#explorer-search-input', 'START');
+    await page.getByRole('button',{name:'Search example'}).click();
+    await page.getByRole('button',{
+      name:'Open sample source result: src/app.js, line 2'
+    }).click();
+    assert.match(await page.locator('#explorer-notice').innerText(),/line 2/);
+    assert.match(await page.locator('#explorer-source').innerText(),/Start with one task/);
+
+    await page.fill('#explorer-search-input', 'not-found-987654');
+    await page.getByRole('button',{name:'Search example'}).click();
+    assert.match(await page.locator('#explorer-search-status').innerText(),/No fixture matches/);
+    assert.equal(await page.locator('#explorer-search-results button').count(),0);
+    await page.getByRole('button',{name:'Clear results'}).click();
+    assert.equal(await page.inputValue('#explorer-search-input'),'');
+    assert.match(await page.locator('#explorer-search-status').innerText(),/No search active/);
+
+    await page.fill('#explorer-search-input','🦉'.repeat(26));
+    await page.getByRole('button',{name:'Search example'}).click();
+    assert.match(await page.locator('#explorer-search-status').innerText(),/Search blocked/);
+    await page.getByRole('button',{name:'Open fixture project: Notes Debugging · example'}).click();
+    assert.equal(await page.inputValue('#explorer-search-input'),'');
+    assert.equal(await page.locator('#explorer-search-results button').count(),0);
+
+    // Hit limits must never imply exhaustive search across remaining source.
+    const many = fixture();
+    const codeFile = many.projects[0].files.find(x => x.path === 'src/app.js');
+    const source = Array.from({length:66},(_,i)=>'needle '+i).join('\n');
+    codeFile.content = source;
+    many.projects[0].revision.before = source;
+    many.projects[0].revision.after = source + '\nupdated';
+    const capContext = await browser.newContext({...devices['iPhone 13']});
+    const capped = await capContext.newPage();
+    await capped.route('**/explorer-fixtures.json', route =>
+      route.fulfill({contentType:'application/json', body:JSON.stringify(many)}));
+    await ready(capped, url);
+    await capped.fill('#explorer-search-input','needle');
+    await capped.getByRole('button',{name:'Search example'}).click();
+    assert.equal(await capped.locator('#explorer-search-results button').count(),50);
+    assert.match(await capped.locator('#explorer-search-status').innerText(),
+      /first 50 fixture matches.*More matches may exist/);
+    assert.equal(await capped.evaluate(() =>
+      document.documentElement.scrollWidth <= window.innerWidth + 1),true);
+    await capContext.close();
 
     assert.deepEqual(errors, [],'No WebKit page errors');
     assert.deepEqual(offsite, [],'No requests off the local Studio origin');
