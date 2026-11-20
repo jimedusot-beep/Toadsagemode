@@ -45,6 +45,14 @@
         </div>
         <p class="hint">Choose an example project to inspect.</p>
         <ul id="explorer-project-list" aria-label="Example projects"></ul>
+        <div class="explorer-import-box">
+          <h3>Optional fixture import</h3>
+          <p class="hint">Load a local JSON example in the exact fixture schema. This replaces the displayed demo data in page memory only. It does not import a real project or run any code.</p>
+          <label for="explorer-import-file">Example fixture JSON file</label>
+          <input id="explorer-import-file" type="file" accept=".json,application/json">
+          <button id="explorer-import" type="button" class="secondary" disabled>Inspect selected fixture JSON</button>
+          <button id="explorer-reset" type="button" class="secondary">Restore built-in examples</button>
+        </div>
       </section>
 
       <div class="explorer-content">
