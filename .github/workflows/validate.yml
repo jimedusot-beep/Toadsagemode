@@ -37,16 +37,24 @@ jobs:
     name: Mobile WebKit
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    # Tests execute trusted repository templates only, not untrusted AI output.
+    # Match package-lock.json Playwright version to use preinstalled WebKit/OS deps.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
+      - name: Provide Python for trusted task-app generation
+        shell: bash
+        run: |
+          if ! command -v python3 >/dev/null 2>&1; then
+            apt-get update -qq
+            apt-get install -y --no-install-recommends python3-minimal
+          fi
+          python3 --version
       - run: npm ci --ignore-scripts
-      - name: Install WebKit test browser
-        run: npx playwright install --with-deps webkit
       - name: Exercise iPhone-sized inbox, storage failure and backup paths
+        env:
+          PYTHON: python3
         run: npm run test:browser
 
   merge_gate:
