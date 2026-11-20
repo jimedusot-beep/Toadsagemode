@@ -27,7 +27,7 @@ def fixture():
 
 class SyntheticWorker:
     def __init__(self, *, missing_image=False, fake_pass=False, wrong_digest=False, wrong_test=False,
-                 never_execute=False, on_run=None, cleanup_failure=False):
+                 never_execute=False, on_run=None, cleanup_failure=False, contradiction=False):
         self.calls = 0
         self.missing_image = missing_image
         self.fake_pass = fake_pass
@@ -36,6 +36,7 @@ class SyntheticWorker:
         self.never_execute = never_execute
         self.on_run = on_run
         self.cleanup_failure = cleanup_failure
+        self.contradiction = contradiction
 
     def run(self, package, *, cancel=None):
         self.calls += 1
@@ -52,7 +53,8 @@ class SyntheticWorker:
                             "path": "wrong.py" if self.wrong_test else spec["path"],
                             "passed": True, "executed": True,
                             "cleanup_ok": not self.cleanup_failure, "category": "passed"}]
-                          if executed else [])}
+                          if executed else []),
+                "blocked_reason": "worker reported blocked despite success" if self.contradiction else None}
 
 
 class SageRevisionTestGateTests(unittest.TestCase):
@@ -114,6 +116,13 @@ class SageRevisionTestGateTests(unittest.TestCase):
                 self.assertFalse(report["release_allowed"])
                 self.assertNotEqual(report["outcome"], "tests_passed")
                 self.assertEqual(report["verification"], "unverified")
+
+    def test_contradictory_success_and_blocked_worker_evidence_is_rejected(self):
+        worker = SyntheticWorker(contradiction=True)
+        result = SageRevisionTestGate(self.project, worker=worker).run(expected_revision=self.baseline)
+        self.assertEqual(result["outcome"], "blocked_invalid_worker_evidence")
+        self.assertFalse(result["passed"])
+        self.assertFalse(result["release_allowed"])
 
     def test_no_docker_means_blocked_not_fallback(self):
         with patch("toad_core.lab.shutil.which", return_value=None):
