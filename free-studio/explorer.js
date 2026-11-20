@@ -13,7 +13,8 @@
       importFile: $('#explorer-import-file'), importButton: $('#explorer-import'),
       reset: $('#explorer-reset'),
       projects: $('#explorer-project-list'), count: $('#explorer-count'),
-      state: $('#explorer-project-state'), title: $('#explorer-project-title'),
+      state: $('#explorer-project-state'), stateDetail: $('#explorer-state-explanation'),
+      title: $('#explorer-project-title'),
       summary: $('#explorer-project-summary'), files: $('#explorer-file-list'),
       searchForm: $('#explorer-search-form'), searchInput: $('#explorer-search-input'),
       searchButton: $('#explorer-search-button'), searchClear: $('#explorer-search-clear'),
@@ -33,6 +34,8 @@
     let selectedId = null;
     let selectedPath = null;
     let loading = false;
+    let importing = false;
+    let fixtureGeneration = 0; // Any reset/import invalidates older asynchronous fixture reads.
     const decisions = new Map(); // Session memory ONLY. Never a code write or backend approval.
 
     function node(tag, className, text) {
@@ -119,6 +122,8 @@
           selectedPath = project.files[0]?.path || null;
           clearSearch();
           render();
+          // render() replaces buttons. Restore a logical keyboard/VoiceOver position.
+          ui.projects.querySelector('[aria-pressed="true"]')?.focus({preventScroll:true});
           announce('Loaded fixture project ' + project.title + '. Source is read-only.');
         });
         li.append(button);
@@ -239,6 +244,16 @@
       ui.title.textContent = project?.title || 'No project selected';
       ui.summary.textContent = project?.summary || 'No example project is available.';
       badge(ui.state, project?.state || 'blocked');
+      const descriptions = {
+        draft: 'Example draft only. No independent tests or release approval exist.',
+        untested: 'Example only. No independent test receipt exists.',
+        testing: 'Simulated testing label only. No test worker is running.',
+        failed: 'Simulated failed test output only. No real test ran here.',
+        verified: 'SIMULATED verified label only. No trustworthy test receipt exists.',
+        blocked: 'Example is blocked. This page cannot run or release source.'
+      };
+      ui.stateDetail.textContent = project ? descriptions[project.state] :
+        'No sample project loaded. Nothing is verified or approved.';
       ui.searchInput.disabled = !project;
       ui.searchButton.disabled = !project;
       if (!project) ui.searchClear.disabled = true;
@@ -265,8 +280,11 @@
       announce('Demo revision ' + choice + '. This does not authorize a real change.');
     }
     async function load() {
-      if (loading) return;
+      // Reset can supersede an in-flight import or an earlier fixture request.
+      const requestId = ++fixtureGeneration;
       loading = true;
+      ui.importFile.value = '';
+      ui.importButton.disabled = true;
       catalog = null;
       selectedId = null;
       selectedPath = null;
@@ -275,13 +293,16 @@
       ui.retry.hidden = true;
       announce('Loading local sample projects…');
       try {
-        catalog = await api.loadFixtures(window.fetch.bind(window));
+        const next = await api.loadFixtures(window.fetch.bind(window));
+        if (requestId !== fixtureGeneration) return; // Superseded response.
+        catalog = next;
         decisions.clear();
         selectedId = catalog.projects[0]?.id || null;
         selectedPath = catalog.projects[0]?.files[0]?.path || null;
         render();
         announce('Loaded ' + catalog.projects.length + ' fixture projects. No model, execution worker or live backend contacted.');
       } catch (error) {
+        if (requestId !== fixtureGeneration) return;
         // Do not show untrusted raw fetch errors or accidentally preserve stale fixture UI.
         catalog = null;
         selectedId = null;
@@ -291,12 +312,17 @@
         announce('Cannot load safe fixture project data. No project or approval is available. ' +
           (error instanceof Error ? error.message : 'Check the local file and retry.'), true);
       } finally {
-        loading = false;
+        if (requestId === fixtureGeneration) loading = false;
       }
     }
     async function importFixture() {
+      if (importing || loading) return;
       const file = ui.importFile.files?.[0];
       if (!file) return;
+      const requestId = fixtureGeneration;
+      importing = true;
+      ui.importButton.disabled = true;
+      try {
       if (file.size > 100000) {
         announce('Fixture import refused: file exceeds 100 KB. Current projects are unchanged.', true);
         return;
@@ -304,6 +330,7 @@
       let next;
       try {
         const bytes = await file.arrayBuffer();
+        if (requestId !== fixtureGeneration) return; // Reset during local file read.
         const text = new TextDecoder('utf-8', {fatal: true}).decode(bytes);
         if (text.length > 100000) throw Error('oversized');
         next = api.validateCatalog(JSON.parse(text));
@@ -311,10 +338,13 @@
         announce('Fixture import refused: invalid UTF-8, JSON or project data. Current projects are unchanged.', true);
         return;
       }
+      if (requestId !== fixtureGeneration) return;
       if (!window.confirm('Replace the displayed FIXTURE projects with examples from this JSON? No real source files, tests or GitHub content will change.')) {
         announce('Fixture import cancelled. Current projects are unchanged.');
         return;
       }
+      if (requestId !== fixtureGeneration) return;
+      ++fixtureGeneration; // Any other pending read must not replace imported fixtures.
       catalog = next;
       decisions.clear();
       selectedId = catalog.projects[0]?.id || null;
@@ -324,6 +354,10 @@
       ui.importFile.value = '';
       ui.importButton.disabled = true;
       announce('Loaded ' + catalog.projects.length + ' local imported fixture projects. No production project imported.');
+      } finally {
+        importing = false;
+        ui.importButton.disabled = !ui.importFile.files?.length;
+      }
     }
     ui.searchForm.addEventListener('submit', event => {
       event.preventDefault();
@@ -343,6 +377,12 @@
     ui.searchClear.addEventListener('click', () => {
       clearSearch();
       ui.searchInput.focus();
+    });
+    ui.searchInput.addEventListener('input', () => {
+      if (ui.searchClear.disabled) return;
+      ui.searchResults.replaceChildren();
+      ui.searchClear.disabled = true;
+      ui.searchStatus.textContent = 'Search term changed. Run Search again for current results.';
     });
     ui.importFile.addEventListener('change', () => {
       ui.importButton.disabled = !ui.importFile.files?.length;
