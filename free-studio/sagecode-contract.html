@@ -35,6 +35,12 @@
       <p class="hint">A SHA-256 match here checks <strong>sample text consistency</strong>, not identity, server authenticity, external verification or safety. This page does not authenticate a host or contact a SageCode API.</p>
     </section>
 
+    <nav class="sage-section-nav" aria-label="Inspector sections">
+      <a href="#sage-files-heading">Current sample source</a>
+      <a href="#sage-search-heading">Sample search</a>
+      <a href="#sage-proposal-heading">Proposed revision diff</a>
+    </nav>
+    <p class="hint">Revision navigation is limited to these source and proposal sections. No server revision history or restore operation is connected.</p>
     <p id="sage-notice" role="status" aria-live="polite">Loading and checking local contract fixture…</p>
     <button id="sage-retry" class="secondary" type="button" hidden>Retry loading local example</button>
 
@@ -59,11 +65,13 @@
         <div class="sage-file-layout">
           <nav aria-label="SageCode sample file navigation">
             <ul id="sage-tree" class="sage-tree"></ul>
+            <p id="sage-empty-tree" class="hint" hidden>This sample project has no declared files.</p>
           </nav>
           <section aria-labelledby="sage-source-heading">
             <h3 id="sage-source-heading">Read-only source</h3>
             <p id="sage-source-name" class="explorer-path">No source selected</p>
             <p id="sage-source-state" role="status" aria-live="polite">No source evidence loaded.</p>
+            <p id="sage-navigation-note" class="sage-navigation-note" role="status" aria-live="polite">No source line selected.</p>
             <pre id="sage-source" tabindex="0" aria-label="Read-only SageCode sample source">No source to display.</pre>
             <p class="hint" id="sage-source-limits">A partial read cannot establish the contents or digest of an entire source file.</p>
           </section>
