@@ -5,6 +5,8 @@ import copy
 import json
 import os
 import tempfile
+import threading
+from unittest.mock import patch
 import unittest
 from pathlib import Path
 
@@ -253,6 +255,107 @@ class SageProjectToolTests(unittest.TestCase):
                     self.tools.propose_edit("README.md", source, expected_revision=self.baseline)
         self.assertEqual(self.tools.status()["revision"], self.baseline)
         self.assertEqual(len(list(self.tools.revisions.iterdir())), 1)
+
+    def test_diff_failure_does_not_commit_head_or_revision(self):
+        prior = set(self.tools.revisions.iterdir())
+        with patch("toad_core.project_tools.difflib.unified_diff", side_effect=RuntimeError("diff failed")):
+            with self.assertRaisesRegex(RuntimeError, "diff failed"):
+                self.tools.propose_edit("README.md", "# Changed\n", expected_revision=self.baseline)
+        self.assertEqual(self.tools.status()["revision"], self.baseline)
+        self.assertEqual(set(self.tools.revisions.iterdir()), prior)
+        self.assertFalse((self.tools.project / ".sagecode-write.lock").exists())
+
+    def test_head_replace_failure_removes_orphan_revision(self):
+        prior = set(self.tools.revisions.iterdir())
+        with patch("toad_core.project_tools.os.replace", side_effect=OSError("disk full")):
+            with self.assertRaisesRegex(OSError, "disk full"):
+                self.tools.propose_edit("README.md", "# Not committed\n",
+                                        expected_revision=self.baseline)
+        self.assertEqual(self.tools.status()["revision"], self.baseline)
+        self.assertEqual(set(self.tools.revisions.iterdir()), prior)
+        self.assertFalse((self.tools.project / ".sagecode-write.lock").exists())
+
+    def test_failed_revision_fsync_cleans_partial_file_and_preserves_head(self):
+        prior = set(self.tools.revisions.iterdir())
+        with patch("toad_core.project_tools.os.fsync", side_effect=OSError("disk failed")):
+            with self.assertRaisesRegex(PackageError, "exclusive SageCode record"):
+                self.tools.propose_edit("README.md", "# Failed write\n", expected_revision=self.baseline)
+        self.assertEqual(self.tools.status()["revision"], self.baseline)
+        self.assertEqual(set(self.tools.revisions.iterdir()), prior)
+        self.assertFalse((self.tools.project / ".sagecode-write.lock").exists())
+
+    def test_two_writers_cannot_accept_same_expected_revision(self):
+        entered, resume = threading.Event(), threading.Event()
+        outcome = []
+        from toad_core.project_tools import _bounded_diff
+
+        def pause_diff(*args):
+            entered.set()
+            if not resume.wait(5):
+                raise RuntimeError("Timed out waiting for test writer")
+            return _bounded_diff(*args)
+
+        def first_writer():
+            try:
+                outcome.append(self.tools.propose_edit("README.md", "# First\n",
+                                                     expected_revision=self.baseline))
+            except BaseException as exc:
+                outcome.append(exc)
+        with patch("toad_core.project_tools._bounded_diff", side_effect=pause_diff):
+            thread = threading.Thread(target=first_writer, daemon=True)
+            thread.start()
+            try:
+                self.assertTrue(entered.wait(3), "First writer did not acquire lock")
+                second = SageProjectTools(self.workspace, "study-planner",
+                                          allowed_project_ids={"study-planner"})
+                with self.assertRaisesRegex(PackageError, "writer busy"):
+                    second.propose_edit("README.md", "# Second\n", expected_revision=self.baseline)
+            finally:
+                resume.set()
+                thread.join(5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(len(outcome), 1)
+        self.assertIsInstance(outcome[0], dict, repr(outcome))
+        self.assertEqual(self.tools.status()["revision"], outcome[0]["revision"])
+        with self.assertRaisesRegex(PackageError, "Stale"):
+            self.tools.propose_edit("README.md", "# Second\n", expected_revision=self.baseline)
+
+    def test_interrupted_writer_lock_requires_manual_review(self):
+        lock = self.tools.project / ".sagecode-write.lock"
+        lock.write_text("interrupted", encoding="utf-8")
+        try:
+            with self.assertRaisesRegex(PackageError, "manual review"):
+                self.tools.propose_edit("README.md", "# Not applied\n", expected_revision=self.baseline)
+            with self.assertRaisesRegex(PackageError, "manual review"):
+                self.tools.restore(self.baseline, expected_revision=self.baseline)
+            self.assertEqual(self.tools.status()["revision"], self.baseline)
+            self.assertTrue(lock.exists())
+        finally:
+            lock.unlink()
+
+    def test_lock_symlink_is_never_overwritten(self):
+        canary = self.workspace / "canary"
+        canary.write_text("KEEP", encoding="utf-8")
+        lock = self.tools.project / ".sagecode-write.lock"
+        try:
+            lock.symlink_to(canary)
+        except OSError:
+            self.skipTest("Symlinks unavailable")
+        with self.assertRaises(PackageError):
+            self.tools.propose_edit("README.md", "# No overwrite\n", expected_revision=self.baseline)
+        self.assertEqual(canary.read_text(encoding="utf-8"), "KEEP")
+        self.assertEqual(self.tools.status()["revision"], self.baseline)
+
+    def test_large_multiline_diff_is_marked_omitted_not_unchanged(self):
+        old = "a\n" * 1200
+        first = self.tools.propose_edit("src/utils.py", old, expected_revision=self.baseline)
+        result = self.tools.propose_edit("src/utils.py", "b\n" * 1200,
+                                         expected_revision=first["revision"])
+        self.assertFalse(result["unchanged"])
+        self.assertTrue(result["truncated"])
+        self.assertEqual(result["diff"], "")
+        self.assertEqual(self.tools.read_file("src/utils.py", max_lines=10)["content"], "b\n" * 10)
+        self.assertFalse(self.tools.status()["approved"])
 
     def test_approved_or_executable_result_is_never_fabricated(self):
         original = self.tools.status()
