@@ -316,10 +316,16 @@ class SageProjectTools:
         new_record = {"schema": "sagecode-revision-v1", "project_id": self.project_id,
                       "parent": current["revision"], "manifest": new_manifest}
         new_record["revision"] = _record_digest(new_record)
-        existing = list(self.revisions.iterdir())
-        if len(existing) >= _MAX_REVISIONS:
-            raise PackageError("SageCode revision limit reached")
-        _create_exclusive(self.revisions / (new_record["revision"] + ".json"), new_record)
+        target_path = self.revisions / (new_record["revision"] + ".json")
+        if target_path.exists() or target_path.is_symlink():
+            # Re-proposing an identical edit after restore may revisit an
+            # existing content-addressed revision. Verify it before reuse.
+            if self._read_revision(new_record["revision"]) != new_record:
+                raise PackageError("Conflicting SageCode revision record")
+        else:
+            if len(list(self.revisions.iterdir())) >= _MAX_REVISIONS:
+                raise PackageError("SageCode revision limit reached")
+            _create_exclusive(target_path, new_record)
         _replace_head(self.project / "head.json", {"revision": new_record["revision"]})
         diff = "".join(difflib.unified_diff(before.splitlines(keepends=True), content.splitlines(keepends=True),
                                             fromfile="a/" + path, tofile="b/" + path))
