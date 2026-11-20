@@ -4,6 +4,8 @@
 
 This page extends the existing Free App Studio **without replacing its builder**. From the Studio homepage, select **Open Project Explorer demo**. Browse five local example projects, explore nested source files, compare before/after changes and read plainly labeled simulated test output. Approve or reject a mock revision using an explicit browser confirmation. A decision affects **only the current page's memory** and does not edit source, create a commit, run code or update a server.
 
+The optional **Inspect selected fixture JSON** control allows the owner to import another local example-data JSON file (maximum 100 KB) after strict UTF-8 and schema validation and an explicit confirmation. A rejected, corrupt, invalid or oversized file never replaces the currently displayed catalog. **Restore built-in examples** recovers the original fixtures. Neither action imports or writes a production project.
+
 The verified and testing examples are **sample labels only**, not evidence. Every status badge says **Fixture** and **sample only**. Source uses DOM textContent, never executable HTML, iframe or eval. The existing separate sandboxed reviewed-template previews remain unchanged.
 
 ## Agent A interface boundary
@@ -28,7 +30,7 @@ From a trusted checkout of this branch:
     python -m unittest tests.test_free_studio_bundles -v
     python tools/build_free_studio_bundles.py --output /tmp/toad-explorer-build
 
-The automated WebKit test covers iPhone 13 and 834 px tablet viewports, keyboard file navigation, focus styles, responsive overflow, source safety, approval confirmation/cancellation, rejection, empty project, testing/failed/verified sample labels, failed fixture load, invalid JSON/data, unavailable storage, long filenames and large malicious-looking source. **Automated WebKit is not physical Safari/iPad testing.** The owner must still test real iPad Safari and VoiceOver, large text, touch targets and browser dialogs.
+The automated WebKit test covers iPhone 13 and 834 px tablet viewports, keyboard file navigation, focus styles, responsive overflow, source safety, approval confirmation/cancellation, rejection, empty project, testing/failed/verified sample labels, failed fixture load, invalid JSON/data and local fixture imports, unavailable storage, long filenames and large malicious-looking source. **Automated WebKit is not physical Safari/iPad testing.** The owner must still test real iPad Safari and VoiceOver, large text, touch targets and browser dialogs.
 
 The existing bundle builder packages the five new Explorer assets together with the unchanged Free Studio templates and six reviewed iframe previews; the original ZIP verification and digest checks remain.
 
