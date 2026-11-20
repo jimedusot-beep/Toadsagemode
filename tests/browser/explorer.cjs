@@ -180,6 +180,37 @@ function fixture() {
       document.documentElement.scrollWidth <= window.innerWidth + 1), true);
     await injected.close();
 
+    // Local import rejects invalid files atomically and requires confirmation.
+    await page.setInputFiles('#explorer-import-file', {
+      name:'corrupt.json',mimeType:'application/json',buffer:Buffer.from('{not-json')
+    });
+    await page.getByRole('button',{name:'Inspect selected fixture JSON'}).click();
+    assert.match(await page.locator('#explorer-notice').innerText(), /Fixture import refused/);
+    assert.equal(await page.locator('#explorer-project-list button').count(),5);
+    await page.setInputFiles('#explorer-import-file', {
+      name:'huge.json',mimeType:'application/json',buffer:Buffer.alloc(100001,65)
+    });
+    await page.getByRole('button',{name:'Inspect selected fixture JSON'}).click();
+    assert.match(await page.locator('#explorer-notice').innerText(), /exceeds 100 KB/);
+    assert.equal(await page.locator('#explorer-project-list button').count(),5);
+
+    const imported = fixture();
+    imported.projects = [imported.projects[4]]; // one empty demo
+    await page.setInputFiles('#explorer-import-file', {
+      name:'safe.json',mimeType:'application/json',
+      buffer:Buffer.from(JSON.stringify(imported))
+    });
+    page.once('dialog',dialog=>dialog.dismiss());
+    await page.getByRole('button',{name:'Inspect selected fixture JSON'}).click();
+    assert.equal(await page.locator('#explorer-project-list button').count(),5);
+    page.once('dialog',dialog=>dialog.accept());
+    await page.getByRole('button',{name:'Inspect selected fixture JSON'}).click();
+    assert.equal(await page.locator('#explorer-project-list button').count(),1);
+    assert.match(await page.locator('#explorer-notice').innerText(), /local imported fixture projects/);
+    await page.getByRole('button',{name:'Restore built-in examples'}).click();
+    await page.waitForFunction(()=>document.querySelector('#explorer-project-list').querySelectorAll('button').length===5);
+    assert.equal(await page.evaluate(()=>localStorage.length),0);
+
     assert.deepEqual(errors, [],'No WebKit page errors');
     assert.deepEqual(offsite, [],'No requests off the local Studio origin');
     await phone.close();
