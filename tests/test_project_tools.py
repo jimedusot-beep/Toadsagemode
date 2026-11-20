@@ -92,6 +92,29 @@ class SageProjectToolTests(unittest.TestCase):
         self.tools.restore(changed["revision"], expected_revision=self.baseline)
         self.assertEqual(self.tools.read_file("README.md")["content"], "# Changed\n")
 
+    def test_reapplying_identical_edit_after_restore_reuses_valid_revision(self):
+        first = self.tools.propose_edit("src/main.py", "print('second')\n", expected_revision=self.baseline)
+        prior_count = len(list(self.tools.revisions.iterdir()))
+        self.tools.restore(self.baseline, expected_revision=first["revision"])
+        repeated = self.tools.propose_edit("src/main.py", "print('second')\n", expected_revision=self.baseline)
+        self.assertEqual(repeated["revision"], first["revision"])
+        self.assertEqual(len(list(self.tools.revisions.iterdir())), prior_count)
+        self.assertFalse(repeated["unchanged"])
+        self.assertIn("+print('second')", repeated["diff"])
+        self.assertEqual(self.tools.read_file("src/main.py")["content"], "print('second')\n")
+        self.assertFalse(self.tools.status()["approved"])
+
+    def test_reused_revision_rejects_stored_record_tampering(self):
+        first = self.tools.propose_edit("src/main.py", "print('second')\n", expected_revision=self.baseline)
+        self.tools.restore(self.baseline, expected_revision=first["revision"])
+        record_file = self.tools.revisions / (first["revision"] + ".json")
+        record = json.loads(record_file.read_text())
+        record["manifest"]["files"][0]["content"] = "malicious\n"
+        record_file.write_text(json.dumps(record), encoding="utf-8")
+        with self.assertRaisesRegex(PackageError, "integrity"):
+            self.tools.propose_edit("src/main.py", "print('second')\n", expected_revision=self.baseline)
+        self.assertEqual(self.tools.status()["revision"], self.baseline)
+
     def test_unmodified_edit_does_not_create_revision(self):
         prior = len(list(self.tools.revisions.iterdir()))
         result = self.tools.propose_edit("README.md", "# Daily Plan\nA test project.\n", expected_revision=self.baseline)
