@@ -185,7 +185,9 @@ class OwnerStudioHandler(BaseHTTPRequestHandler):
         if self.headers.get("Content-Type", "").split(";")[0].strip() != "application/json":
             return self._reply(415, {"error": "JSON request required"})
         size = self.headers.get("Content-Length", "")
-        if not size.isdigit() or not 1 <= int(size) <= MAX_BODY:
+        if (not size or len(size) > len(str(MAX_BODY)) or
+                not size.isascii() or not size.isdecimal() or
+                not 1 <= int(size) <= MAX_BODY):
             return self._reply(413, {"error": "Missing or oversized request"})
         try:
             body = self._read_body(int(size))
