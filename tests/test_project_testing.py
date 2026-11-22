@@ -179,6 +179,27 @@ class TestProjectTesting(unittest.TestCase):
         self.assertFalse(receipt["approved"])
         self.assertFalse(receipt["release_allowed"])
 
+    def test_contradictory_passing_category_cannot_verify_revision(self):
+        gate = self.freeze()
+        real = DockerWorker()
+        for category in ("test_failure", "timeout", "unknown"):
+            with self.subTest(category=category):
+                def contradictory(_self, stage, *, cancel=None):
+                    spec = stage["tests"][0]
+                    return {"backend": "docker", "digest": package_digest(stage),
+                            "passed": True, "executed": True, "cleanup_ok": True,
+                            "image_id": "sha256:" + "f" * 64, "blocked_reason": None,
+                            "tests": [{"index": 0, "kind": spec["kind"], "path": spec["path"],
+                                       "passed": True, "executed": True, "cleanup_ok": True,
+                                       "category": category}]}
+                # Simulated DockerWorker response, never a real container run.
+                with patch.object(DockerWorker, "run", contradictory):
+                    receipt = gate.run_current(worker=real)
+                self.assertEqual(receipt["status"], "failed")
+                self.assertFalse(receipt["passed"])
+                self.assertFalse(receipt["release_allowed"])
+                self.assertEqual(receipt["verification"], "unverified")
+
     def test_unmatched_container_test_identity_cannot_count_as_passed(self):
         gate = self.freeze()
         real = DockerWorker()
