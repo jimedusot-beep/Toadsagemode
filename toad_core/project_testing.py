@@ -118,6 +118,7 @@ def _is_true_test_result(result, digest, specs):
                     and t.get("kind") == spec["kind"] and t.get("path") == spec["path"]
                     and t.get("passed") is True and t.get("executed") is True
                     and t.get("cleanup_ok") is True
+                    and t.get("category") == "passed"
                     for index, (t, spec) in enumerate(zip(cases, specs))))
 
 
